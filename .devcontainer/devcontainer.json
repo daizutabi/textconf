@@ -1,0 +1,14 @@
+{
+  "name": "textconf",
+  "image": "mcr.microsoft.com/vscode/devcontainers/base:ubuntu-22.04",
+  "features": {
+    "ghcr.io/devcontainers-contrib/features/starship:1": {},
+    "ghcr.io/va-h/devcontainers-features/uv:1": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": ["charliermarsh.ruff"]
+    }
+  },
+  "postCreateCommand": ".devcontainer/postCreate.sh"
+}
