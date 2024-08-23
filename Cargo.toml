@@ -14,5 +14,10 @@ rust-version = "1.76"
 [dependencies]
 anyhow = "1.0.86"
 clap = { version = "4.5.16", features = ["derive"] }
+regex = "1.10.6"
 serde = { version = "1.0.208", features = ["derive"] }
 toml = "0.8.19"
+
+[dev-dependencies]
+pretty_assertions = "1.4"
+rstest = "0.22.0"

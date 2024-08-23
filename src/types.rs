@@ -1,7 +1,24 @@
-// import re
+use regex::Regex;
 
-// def is_int(x: str) -> bool:
-//     return re.match(r"^[+-]?[0-9]+$", x) is not None
+pub(crate) fn is_int(value: &str) -> bool {
+    let re = Regex::new(r"^[+-]?[0-9]+$").unwrap();
+    re.is_match(value)
+}
+
+pub(crate) fn is_float(value: &str) -> bool {
+    if value.is_empty() {
+        return false;
+    }
+
+    let re = Regex::new(r"^[+-]?[0-9]*\.[0-9]*$").unwrap();
+    if re.is_match(value) {
+        return true;
+    }
+
+    let value = value.to_lowercase();
+
+    //         return True
+}
 
 // def is_float(x: str) -> bool:
 //     if len(x) <= 1:
@@ -29,10 +46,20 @@
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pretty_assertions::assert_eq;
+    use rstest::rstest;
 
-    #[test]
-    fn test() {
-        assert_eq!(1, 1);
+    #[rstest]
+    #[case("", false)]
+    #[case("0", true)]
+    #[case("9", true)]
+    #[case("1.0", false)]
+    #[case("a", false)]
+    fn test_is_int(#[case] value: &str, #[case] result: bool) {
+        assert_eq!(is_int(value), result);
+        assert_eq!(is_int(format!("+{value}").as_str()), result);
+        assert_eq!(is_int(format!("-{value}").as_str()), result);
+        assert_eq!(is_int(format!("+-{value}").as_str()), false);
     }
 }
 // import pytest
