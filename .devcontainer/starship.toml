@@ -1,6 +1,6 @@
 "$schema" = 'https://starship.rs/config-schema.json'
 
-add_newline = false
+add_newline = true
 
 [username]
 disabled = true
@@ -23,7 +23,5 @@ style = 'red'
 modified = '*'
 format = '([$modified]($style)) '
 
-[python]
-format = '[${symbol}${pyenv_prefix}(${version} )(\($virtualenv\) )]($style)'
-symbol = ' '
-style = 'yellow'
+[rust]
+format = '[$symbol$version]($style) '

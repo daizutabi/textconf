@@ -1,5 +1,1 @@
-.coverage
-.venv/
-__pycache__/
-lcov.info
-dist/
+/target
