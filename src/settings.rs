@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::cli::Args;
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(default)]
 pub(crate) struct Settings {
@@ -10,5 +12,11 @@ pub(crate) struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self { max_width: 100 }
+    }
+}
+
+impl Settings {
+    fn new() -> Self {
+        Settings::default()
     }
 }
