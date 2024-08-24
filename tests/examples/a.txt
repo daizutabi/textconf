@@ -1,0 +1,10 @@
+{A}{a=1}{b:.2f=2.0}{B}
+---
+{A}{a}{b:.2f}{B}
+---
+from dataclass import dataclass
+
+@dataclass
+class A:
+    a: int = 1
+    b: float = 2.0
