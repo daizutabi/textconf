@@ -1,17 +1,19 @@
+use std::sync::LazyLock;
+
 use regex::Regex;
 
-pub(crate) fn is_int(value: &str) -> bool {
-    let re = Regex::new(r"^[+-]?[0-9]+$").unwrap();
-    re.is_match(value)
+static INT_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^[+-]?[0-9]+$").unwrap());
+static FLOAT_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^[+-]?[0-9]*\.[0-9]*$").unwrap());
+
+pub fn is_int(value: &str) -> bool {
+    INT_RE.is_match(value)
 }
 
-pub(crate) fn is_float(value: &str) -> bool {
+pub fn is_float(value: &str) -> bool {
     if value.len() <= 1 {
         return false;
     }
-
-    let re = Regex::new(r"^[+-]?[0-9]*\.[0-9]*$").unwrap();
-    if re.is_match(value) {
+    if FLOAT_RE.is_match(value) {
         return true;
     }
     let value = value.to_lowercase();
@@ -23,11 +25,11 @@ pub(crate) fn is_float(value: &str) -> bool {
     (is_float(parts[0]) || is_int(parts[0])) && is_int(parts[1])
 }
 
-pub(crate) fn is_true(x: &str) -> bool {
+pub fn is_true(x: &str) -> bool {
     x.to_lowercase() == "true"
 }
 
-pub(crate) fn is_false(x: &str) -> bool {
+pub fn is_false(x: &str) -> bool {
     x.to_lowercase() == "false"
 }
 
