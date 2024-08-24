@@ -1,5 +1,5 @@
 mod cli;
-mod parser;
+mod params;
 mod settings;
 mod types;
 
