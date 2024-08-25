@@ -1,33 +1,33 @@
-// use crate::params::{Parameter, Parameters};
-// use crate::types::{is_bool, is_float, is_int, is_true};
-// use thiserror::Error;
+use crate::params::{Parameter, ParameterReplacer};
+use crate::types::{is_bool, is_float, is_int, is_true};
+use thiserror::Error;
 
-// #[derive(Debug, PartialEq, Clone)]
-// enum Kind {
-//     Int,
-//     Float,
-//     String,
-//     Bool,
-// }
+#[derive(Debug, PartialEq, Clone)]
+enum Kind {
+    Int,
+    Float,
+    String,
+    Bool,
+}
 
-// impl std::fmt::Display for Kind {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         let value = match self {
-//             &Kind::Int => "int",
-//             &Kind::Float => "float",
-//             &Kind::String => "str",
-//             &Kind::Bool => "bool",
-//         };
-//         write!(f, "{}", value)
-//     }
-// }
+impl std::fmt::Display for Kind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let value = match self {
+            &Kind::Int => "int",
+            &Kind::Float => "float",
+            &Kind::String => "str",
+            &Kind::Bool => "bool",
+        };
+        write!(f, "{}", value)
+    }
+}
 
-// #[derive(Debug, PartialEq, Clone)]
-// pub struct Field {
-//     name: String,
-//     kind: Kind,
-//     default: String,
-// }
+#[derive(Debug, PartialEq, Clone)]
+pub struct Field<'a> {
+    name: &'a str,
+    kind: Kind,
+    default: &'a str,
+}
 
 // impl Field {
 //     pub fn name(&self) -> &str {
