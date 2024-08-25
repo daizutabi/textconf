@@ -1,9 +1,8 @@
 use crate::params::{Parameter, Parameters};
 use crate::types::{is_bool, is_float, is_int, is_true};
-use regex::Regex;
-use std::sync::LazyLock;
+use thiserror::Error;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 enum Kind {
     Int,
     Float,
@@ -23,41 +22,62 @@ impl std::fmt::Display for Kind {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Field {
     name: String,
     kind: Kind,
     default: String,
 }
 
-impl From<&Parameter> for Field {
-    fn from(param: &Parameter) -> Self {
-        let mut default = param.default();
-        let kind = if is_bool(default) {
-            default = if is_true(default) { "True" } else { "False" };
-            Kind::Bool
-        } else if is_int(default) {
-            Kind::Int
-        } else if is_float(default) {
-            Kind::Float
-        } else {
-            Kind::String
-        };
+impl Field {
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+    pub fn default(&self) -> &str {
+        &self.default
+    }
 
-        Field {
-            name: param.name().to_string(),
-            kind,
-            default: default.to_string(),
+    pub fn remove_prefix(&mut self) -> Option<String> {
+        match self.name.rsplit_once('.') {
+            Some((prefix, name)) => {
+                let prefix = prefix.to_string();
+                self.name = name.to_string();
+                Some(prefix)
+            }
+            None => None,
         }
     }
 }
 
-impl<'a> TryFrom<&'a str> for Field {
-    type Error = <Parameter as TryFrom<&'a str>>::Error;
+#[derive(Debug, Error)]
+pub enum FieldError {
+    #[error("missing default value: {0}")]
+    MissingDefault(String),
+}
 
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        let param = Parameter::try_from(value)?;
-        Ok((&param).into())
+impl TryFrom<&Parameter> for Field {
+    type Error = FieldError;
+
+    fn try_from(param: &Parameter) -> Result<Self, Self::Error> {
+        let default = param
+            .default()
+            .ok_or_else(|| FieldError::MissingDefault(param.name().to_string()))?;
+
+        let (kind, default) = match default {
+            d if is_bool(d) => (
+                Kind::Bool,
+                if is_true(d) { "True" } else { "False" }.to_string(),
+            ),
+            d if is_int(d) => (Kind::Int, d.to_string()),
+            d if is_float(d) => (Kind::Float, d.to_string()),
+            d => (Kind::String, d.to_string()),
+        };
+
+        Ok(Field {
+            name: param.name().to_string(),
+            kind,
+            default,
+        })
     }
 }
 
@@ -70,7 +90,7 @@ impl std::fmt::Display for Field {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Default)]
 pub struct Fields {
     vec: Vec<Field>,
 }
@@ -83,20 +103,19 @@ impl std::ops::Deref for Fields {
     }
 }
 
-impl From<&Parameters> for Fields {
-    fn from(value: &Parameters) -> Self {
-        let vec: Vec<_> = value.iter().map(Field::from).collect();
-        Fields { vec }
+impl std::ops::DerefMut for Fields {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.vec
     }
 }
 
-impl<'a> TryFrom<&'a str> for Fields {
-    type Error = <Parameters as TryFrom<&'a str>>::Error;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        let params = Parameters::try_from(value)?;
-        let vec: Vec<_> = params.iter().map(Field::from).collect();
-        Ok(Fields { vec })
+impl From<&Parameters> for Fields {
+    fn from(value: &Parameters) -> Self {
+        let vec: Vec<_> = value
+            .iter()
+            .filter_map(|param| Field::try_from(param).ok())
+            .collect();
+        Fields { vec }
     }
 }
 
@@ -107,89 +126,87 @@ impl std::fmt::Display for Fields {
     }
 }
 
+#[derive(Debug, PartialEq, Default)]
 pub struct Dataclass {
-    name: String,
+    name: Option<String>,
     fields: Fields,
 }
 
 impl Dataclass {
-    const TARGET: &'static str = "_target_";
-}
-
-static TARGET_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\{_target_:([^}]+)\}").unwrap());
-
-impl<'a> TryFrom<&'a str> for Dataclass {
-    type Error = anyhow::Error;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        let fields = Fields::try_from(value)?;
-        let name = TARGET_RE
-            .captures(value)
-            .and_then(|caps| caps.get(1))
-            .map(|m| m.as_str().to_string())
-            .ok_or_else(|| anyhow::anyhow!("{} field not found", Dataclass::TARGET))?;
-
-        Ok(Dataclass { name, fields })
+    pub fn new(name: Option<&str>) -> Self {
+        Dataclass {
+            name: name.map(|s| s.to_string()),
+            fields: Fields { vec: Vec::new() },
+        }
     }
 }
 
-impl std::fmt::Display for Dataclass {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let cls = format!("@dataclass\nclass {}:", self.name);
-        write!(f, "{}\n{}", cls, self.fields)
+#[derive(Debug, PartialEq, Default)]
+pub struct Dataclasses {
+    vec: Vec<Dataclass>,
+}
+
+impl std::ops::Deref for Dataclasses {
+    type Target = Vec<Dataclass>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.vec
     }
 }
+
+impl Dataclasses {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn get(&self, name: Option<&str>) -> Option<&Dataclass> {
+        self.vec
+            .iter()
+            .find(|&dataclass| dataclass.name.as_deref() == name)
+    }
+    pub fn get_mut(&mut self, name: Option<&str>) -> Option<&mut Dataclass> {
+        self.vec
+            .iter_mut()
+            .find(|dataclass| dataclass.name.as_deref() == name)
+    }
+
+    pub fn push(&mut self, mut field: Field) {
+        let prefix = field.remove_prefix();
+        if let Some(dataclass) = self.get_mut(prefix.as_deref()) {
+            dataclass.fields.push(field);
+        } else {
+            let dataclass = Dataclass::new(prefix.as_deref());
+            self.vec.push(dataclass);
+        }
+    }
+}
+
+// impl<'a> TryFrom<&'a str> for Dataclass {
+//     type Error = anyhow::Error;
+
+//     fn try_from(value: &str) -> Result<Self, Self::Error> {
+//         let fields = Fields::try_from(value)?;
+//         let name = TARGET_RE
+//             .captures(value)
+//             .and_then(|caps| caps.get(1))
+//             .map(|m| m.as_str().to_string())
+//             .ok_or_else(|| anyhow::anyhow!("{} field not found", Dataclass::TARGET))?;
+
+//         Ok(Dataclass { name, fields })
+//     }
+// }
+
+// impl std::fmt::Display for Dataclass {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         let cls = format!("@dataclass\nclass {}:", self.name);
+//         write!(f, "{}\n{}", cls, self.fields)
+//     }
+// }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use pretty_assertions::assert_eq;
-
-    #[test]
-    fn test_field_from_int_parameter() {
-        let field = Field::try_from("{age=30}").unwrap();
-        assert_eq!(field.name, "age");
-        assert_eq!(field.kind, Kind::Int);
-        assert_eq!(field.default, "30");
-    }
-
-    #[test]
-    fn test_field_from_float_parameter() {
-        let field = Field::try_from("{price=19.99}").unwrap();
-        assert_eq!(field.name, "price");
-        assert_eq!(field.kind, Kind::Float);
-        assert_eq!(field.default, "19.99");
-    }
-
-    #[test]
-    fn test_field_from_string_parameter() {
-        let field = Field::try_from("{name=John}").unwrap();
-        assert_eq!(field.name, "name");
-        assert_eq!(field.kind, Kind::String);
-        assert_eq!(field.default, "John");
-    }
-
-    #[test]
-    fn test_field_from_bool_parameter_true() {
-        let field = Field::try_from("{is_active=true}").unwrap();
-        assert_eq!(field.name, "is_active");
-        assert_eq!(field.kind, Kind::Bool);
-        assert_eq!(field.default, "True");
-    }
-
-    #[test]
-    fn test_field_from_bool_parameter_false() {
-        let field = Field::try_from("{is_deleted=false}").unwrap();
-        assert_eq!(field.name, "is_deleted");
-        assert_eq!(field.kind, Kind::Bool);
-        assert_eq!(field.default, "False");
-    }
-
-    #[test]
-    fn test_field_from_invalid_parameter() {
-        let result = Field::try_from("{invalid}");
-        assert!(result.is_err());
-    }
 
     #[test]
     fn test_field_display_int() {
@@ -232,71 +249,75 @@ mod tests {
     }
 
     #[test]
-    fn test_fields_from_multiple_parameters() {
-        let fields =
-            Fields::try_from("{count=10}{price=15.99}{name=Alice}{is_active=true}").unwrap();
-
-        assert_eq!(fields.len(), 4);
-
-        assert_eq!(fields[0].name, "count");
-        assert_eq!(fields[0].kind, Kind::Int);
-        assert_eq!(fields[0].default, "10");
-
-        assert_eq!(fields[1].name, "price");
-        assert_eq!(fields[1].kind, Kind::Float);
-        assert_eq!(fields[1].default, "15.99");
-
-        assert_eq!(fields[2].name, "name");
-        assert_eq!(fields[2].kind, Kind::String);
-        assert_eq!(fields[2].default, "Alice");
-
-        assert_eq!(fields[3].name, "is_active");
-        assert_eq!(fields[3].kind, Kind::Bool);
-        assert_eq!(fields[3].default, "True");
+    fn test_field_remove_prefix() {
+        let mut field = Field {
+            name: "user.profile.age".to_string(),
+            kind: Kind::Int,
+            default: "25".to_string(),
+        };
+        let prefix = field.remove_prefix();
+        assert_eq!(field.name, "age");
+        assert_eq!(prefix, Some("user.profile".to_string()));
     }
 
     #[test]
-    fn test_fields_display() {
-        let fields = Fields::try_from(
-            "{\n{_target_:abc}{count=10}{price=15.99}{name=Alice}{is_active=true}\n}",
-        )
-        .unwrap();
-
-        let expected =
-            "    count: int = 10\n    price: float = 15.99\n    name: str = \"Alice\"\n    is_active: bool = True\n";
-        assert_eq!(fields.to_string(), expected);
+    fn test_field_remove_prefix_no_prefix() {
+        let mut field = Field {
+            name: "age".to_string(),
+            kind: Kind::Int,
+            default: "25".to_string(),
+        };
+        let prefix = field.remove_prefix();
+        assert_eq!(field.name, "age");
+        assert_eq!(prefix, None);
     }
 
     #[test]
-    fn test_empty_fields() {
-        let fields = Fields::try_from("").unwrap();
-
-        assert!(fields.is_empty());
-        assert_eq!(fields.to_string(), "");
+    fn test_dataclasses_get() {
+        let field = Field {
+            name: "age".to_string(),
+            kind: Kind::Int,
+            default: "25".to_string(),
+        };
+        let dataclasses = Dataclasses {
+            vec: vec![
+                Dataclass {
+                    name: Some("user".to_string()),
+                    fields: Fields {
+                        vec: vec![field.clone()],
+                    },
+                },
+                Dataclass {
+                    name: None,
+                    fields: Fields { vec: vec![field] },
+                },
+            ],
+        };
+        assert_eq!(dataclasses.get(Some("user")), Some(&dataclasses[0]));
+        assert_eq!(dataclasses.get(None), Some(&dataclasses[1]));
     }
 
     #[test]
-    fn test_dataclass_from_str() {
-        let dataclass = Dataclass::try_from(
-            "{\n{_target_:abc}{count=10}{price=15.99}{name=Alice}{is_active=true}\n}",
-        )
-        .unwrap();
-        assert_eq!(dataclass.name, "abc");
+    fn test_dataclasses_push() {
+        let mut dataclasses = Dataclasses::new();
+        let field = Field {
+            name: "age".to_string(),
+            kind: Kind::Int,
+            default: "25".to_string(),
+        };
+        dataclasses.push(field);
+        assert_eq!(dataclasses.get(None), Some(&dataclasses[0]));
     }
 
     #[test]
-    fn test_dataclass_display() {
-        let dataclass = Dataclass::try_from(
-            "{\n{_target_:abc}{count=10}{price=15.99}{name=Alice}{is_active=true}\n}",
-        )
-        .unwrap();
-        let expected = "@dataclass\nclass abc:\n    count: int = 10\n";
-        assert!(dataclass.to_string().starts_with(expected));
-    }
-
-    #[test]
-    fn test_dataclass_missing_target() {
-        let result = Dataclass::try_from("{count=10}{price=15.99}{name=Alice}{is_active=true}");
-        assert!(result.is_err());
+    fn test_dataclasses_push_with_prefix() {
+        let mut dataclasses = Dataclasses::new();
+        let field = Field {
+            name: "user.profile.age".to_string(),
+            kind: Kind::Int,
+            default: "25".to_string(),
+        };
+        dataclasses.push(field);
+        assert_eq!(dataclasses.get(Some("user.profile")), Some(&dataclasses[0]));
     }
 }

@@ -1,3 +1,5 @@
+use thiserror::Error;
+
 #[derive(Debug, Copy, Clone, PartialEq)]
 struct Brace<'a> {
     input: &'a str,
@@ -12,6 +14,10 @@ impl<'a> Brace<'a> {
 
     pub fn as_str(&self) -> &'a str {
         &self.input[self.range()]
+    }
+
+    pub fn content(&self) -> &'a str {
+        &self.input[self.start + 1..self.end - 1]
     }
 }
 
@@ -41,18 +47,17 @@ impl<'a> Braces<'a> {
                 }
                 '}' => {
                     if let Some(start_index) = start {
-                        let brace = Brace {
+                        vec.push(Brace {
                             input,
                             start: start_index,
                             end: index + 1,
-                        };
-                        vec.push(brace);
+                        });
                     }
                     prev = None;
                     start = None;
                 }
                 c => {
-                    if c == ' ' || c == '\n' {
+                    if c.is_whitespace() {
                         prev = None;
                         start = None;
                     } else if start.is_some() {
@@ -83,7 +88,7 @@ impl<'a> std::ops::Deref for Braces<'a> {
 pub struct Parameter {
     name: String,
     fmt: Option<String>,
-    default: String,
+    default: Option<String>,
 }
 
 impl Parameter {
@@ -93,68 +98,42 @@ impl Parameter {
     // pub fn fmt(&self) -> Option<&str> {
     //     self.fmt.as_deref()
     // }
-    pub fn default(&self) -> &str {
-        self.default.as_str()
+    pub fn default(&self) -> Option<&str> {
+        self.default.as_deref()
     }
 }
 
-impl TryFrom<&str> for Parameter {
-    // type Error = &'static str;
-    type Error = anyhow::Error;
-
-    /// Attempts to create a `Parameter` from a string slice.
-    ///
-    /// # Arguments
-    ///
-    /// * `input` - A string slice that should represent a parameter.
-    ///
-    /// # Returns
-    ///
-    /// * `Ok(Parameter)` if the input is valid and can be parsed into a `Parameter`.
-    /// * `Err(&'static str)` if the input is invalid, with an error message explaining why.
-    fn try_from(input: &str) -> Result<Self, Self::Error> {
-        if !input.starts_with('{') || !input.ends_with('}') {
-            anyhow::bail!(
-                "Parameter must be enclosed in '{{' and '}}': found {}",
-                input
-            );
-        }
-
-        let param = &input[1..input.len() - 1];
-        let name_default: Vec<&str> = param.split('=').collect();
-        if name_default.len() != 2 {
-            anyhow::bail!(
-                "Parameter format must contain exactly one '=': found {}",
-                input
-            );
-        }
-
-        if name_default[1].is_empty() {
-            anyhow::bail!("Parameter default is empty: found {}", input);
-        }
-        let default = name_default[1].to_string();
-
-        let name_fmt: Vec<&str> = name_default[0].split(':').collect();
-        if name_fmt[0].is_empty() {
-            anyhow::bail!("Parameter name is empty: found {}", input);
-        }
-        let name = name_fmt[0].to_string();
-
-        let fmt = if name_fmt.len() == 2 && !name_fmt[1].is_empty() {
-            Some(name_fmt[1].to_string())
-        } else {
-            None
-        };
-
-        Ok(Parameter { name, fmt, default })
-    }
+#[derive(Debug, Error)]
+pub enum ParameterError {
+    #[error("Parameter name is empty: found {0}")]
+    EmptyName(String),
 }
 
 impl<'a> TryFrom<&'a Brace<'a>> for Parameter {
-    type Error = anyhow::Error;
+    type Error = ParameterError;
 
     fn try_from(brace: &'a Brace<'a>) -> Result<Self, Self::Error> {
-        Parameter::try_from(brace.as_str())
+        let content = brace.content();
+
+        let (name_default, default) = match content.split_once('=') {
+            Some((name, default)) => (name, Some(default.to_string())),
+            None => (content, None),
+        };
+
+        let (name, fmt) = match name_default.split_once(':') {
+            Some((name, fmt)) => (name, Some(fmt.to_string())),
+            None => (name_default, None),
+        };
+
+        if name.is_empty() {
+            return Err(ParameterError::EmptyName(content.to_string()));
+        }
+
+        Ok(Parameter {
+            name: name.to_string(),
+            fmt,
+            default,
+        })
     }
 }
 
@@ -162,34 +141,27 @@ impl std::fmt::Display for Parameter {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let name_fmt = match &self.fmt {
             Some(fmt_value) => format!("{}:{}", self.name, fmt_value),
-            None => format!("{}", self.name),
+            None => self.name.to_string(),
         };
-        write!(f, "{{{}={}}}", name_fmt, self.default)
-    }
-}
 
-impl Parameter {
-    /// Converts the parameter to a string representation, potentially losing some information.
-    ///
-    /// This method creates a string representation of the parameter, including the name and format (if present),
-    /// but omits the default value. It's "lossy" because it doesn't include all the information stored in the Parameter.
-    ///
-    /// # Returns
-    ///
-    /// A `String` representing the parameter, either in the format "{name:format}" if a format is specified,
-    /// or just the name if no format is present.
-    fn to_string_lossy(&self) -> String {
-        match &self.fmt {
-            Some(fmt_value) => format!("{{{}:{}}}", self.name, fmt_value),
-            None => format!("{{{}}}", self.name),
+        match &self.default {
+            Some(default_value) => write!(f, "{{{}={}}}", name_fmt, default_value),
+            None => write!(f, "{{{}}}", name_fmt),
         }
     }
 }
 
-/// Represents a collection of parameters.
-///
-/// This struct holds a vector of `Parameter` instances and provides
-/// convenient access to them through the `Deref` trait.
+impl Parameter {
+    fn to_string_without_default(&self, prefix: Option<&str>) -> String {
+        let prefix = prefix.unwrap_or("");
+        let name = format!("{}{}", prefix, self.name);
+        match &self.fmt {
+            Some(fmt_value) => format!("{{{}:{}}}", name, fmt_value),
+            None => format!("{{{}}}", name),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub struct Parameters {
     vec: Vec<Parameter>,
@@ -203,56 +175,41 @@ impl std::ops::Deref for Parameters {
     }
 }
 
-impl TryFrom<&str> for Parameters {
-    type Error = anyhow::Error;
-
-    /// Attempts to create a `Parameters` instance from a string slice.
-    ///
-    /// This function parses the input string, extracting valid parameters enclosed in braces.
-    /// It then checks for duplicate parameter names, which are not allowed.
-    ///
-    /// # Arguments
-    ///
-    /// * `value` - A string slice containing the parameter definitions.
-    ///
-    /// # Returns
-    ///
-    /// * `Ok(Parameters)` if parsing is successful and there are no duplicate names.
-    /// * `Err` if there's a parsing error or if duplicate parameter names are found.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use your_crate::Parameters;
-    ///
-    /// let params = Parameters::try_from("{a=1}{b:.2f=3.14}").unwrap();
-    /// assert_eq!(params.len(), 2);
-    /// ```
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        let braces: Braces = value.into();
-        let vec: Vec<_> = braces
+impl From<&str> for Parameters {
+    fn from(value: &str) -> Self {
+        let vec = Braces::new(value)
             .iter()
             .filter_map(|s| Parameter::try_from(s).ok())
             .collect();
-
-        let mut seen_names = std::collections::HashSet::with_capacity(vec.len());
-        for param in &vec {
-            if !seen_names.insert(&param.name) {
-                anyhow::bail!("Duplicate parameter name found");
-            }
-        }
-        Ok(Parameters { vec })
+        Parameters { vec }
     }
 }
 
 impl Parameters {
-    pub fn replace_lossy(&self, input: &str) -> String {
-        let mut result = input.to_string();
+    pub fn replace_without_default(&self, input: &str, prefix: Option<&str>) -> String {
+        let names_with_default: std::collections::HashSet<_> = self
+            .vec
+            .iter()
+            .filter(|&p| p.default().is_some())
+            .map(|p| p.name())
+            .collect();
+
+        let mut result = String::new();
+        let mut last_index = 0;
+
         for param in &self.vec {
-            let from = param.to_string();
-            let to = param.to_string_lossy();
-            result = result.replace(&from, &to);
+            if names_with_default.contains(param.name()) {
+                let from = param.to_string();
+                let to = param.to_string_without_default(prefix);
+                if let Some(start) = input[last_index..].find(&from) {
+                    let start = last_index + start;
+                    result.push_str(&input[last_index..start]);
+                    result.push_str(&to);
+                    last_index = start + from.len();
+                }
+            }
         }
+        result.push_str(&input[last_index..]);
         result
     }
 }
@@ -281,68 +238,43 @@ mod tests {
         assert_eq!(vec, vec!["{x}", "{y}"]);
     }
 
-    #[rstest]
-    #[case("abc")]
-    #[case("{a}")]
-    #[case("{=}")]
-    #[case("{=1}")]
-    #[case("{:=1}")]
-    fn parameter_err(#[case] value: &str) {
-        assert!(Parameter::try_from(value).is_err());
-    }
-
-    #[rstest]
-    #[case("{a=1}", "a", None, "1")]
-    #[case("{b:.2f=3.14}", "b", Some(".2f"), "3.14")]
-    fn parameter_ok(
-        #[case] input: &str,
-        #[case] name: &str,
-        #[case] fmt: Option<&str>,
-        #[case] default: &str,
-    ) {
-        let param = Parameter::try_from(input).unwrap();
-        assert_eq!(param.name, name);
-        assert_eq!(param.fmt.as_deref(), fmt);
-        assert_eq!(param.default, default);
-    }
-
-    #[rstest]
-    #[case("{a=1}")]
-    #[case("{a:.2f=1.0}")]
-    fn parameter_display(#[case] input: &str) {
-        let param = Parameter::try_from(input).unwrap();
-        assert_eq!(format!("{}", param), input);
-    }
-
     #[test]
-    fn test_parameter_to_string_lossy() {
+    fn test_parameter_to_string_without_default() {
         let param = Parameter {
             name: "test".to_string(),
             fmt: Some(".2f".to_string()),
-            default: "3.14".to_string(),
+            default: Some("3.14".to_string()),
         };
-        assert_eq!(param.to_string_lossy(), "{test:.2f}");
+        assert_eq!(param.to_string_without_default(None), "{test:.2f}");
+        assert_eq!(param.to_string_without_default(Some("p.")), "{p.test:.2f}");
     }
 
     #[test]
-    fn test_parameter_to_string_lossy_no_fmt() {
+    fn test_parameter_to_string_without_default_no_fmt() {
         let param = Parameter {
             name: "name".to_string(),
             fmt: None,
-            default: "a".to_string(),
+            default: Some("a".to_string()),
         };
-        assert_eq!(param.to_string_lossy(), "{name}");
+        assert_eq!(param.to_string_without_default(None), "{name}");
+        assert_eq!(param.to_string_without_default(Some("p.")), "{p.name}");
     }
 
     #[test]
-    fn test_parameters_err() {
-        assert!(Parameters::try_from("{a=1}{a=2}").is_err())
-    }
-
-    #[test]
-    fn test_replace() {
+    fn test_replace_no_prefix() {
         let input = "{a}{b=2}{c:.2f=3.0}";
-        let params = Parameters::try_from(input).unwrap();
-        assert_eq!(params.replace_lossy(input), "{a}{b}{c:.2f}")
+        let params = Parameters::from(input);
+        assert_eq!(params.replace_without_default(input, None), "{a}{b}{c:.2f}")
+    }
+
+    #[test]
+    fn test_replace_with_prefix() {
+        let input = "{a}{b=2}{c:.2f=3.0}{a:.2f}{b:.1f}{c}{{b}}";
+        let params = Parameters::from(input);
+        assert_eq!(params.len(), 6);
+        assert_eq!(
+            params.replace_without_default(input, Some("p.")),
+            "{a}{p.b}{p.c:.2f}{a:.2f}{p.b:.1f}{p.c}{{b}}"
+        )
     }
 }
