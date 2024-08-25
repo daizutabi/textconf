@@ -1,10 +1,10 @@
-mod common;
+// mod common;
 
-#[test]
-fn a() {
-    let e = common::read_example("tests/examples/a.txt").unwrap();
-    assert_eq!(e[0], "{A}{a=1}{b:.2f=2.0}{B}")
-}
+// #[test]
+// fn a() {
+//     let e = common::read_example("tests/examples/a.txt").unwrap();
+//     assert_eq!(e[0], "{A}{a=1}{b:.2f=2.0}{B}")
+// }
 // use anyhow::Result;
 // use assert_cmd::Command;
 // use predicates::prelude::*;

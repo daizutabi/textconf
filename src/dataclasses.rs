@@ -1,5 +1,7 @@
 use crate::params::{Parameter, Parameters};
 use crate::types::{is_bool, is_float, is_int, is_true};
+use regex::Regex;
+use std::sync::LazyLock;
 
 #[derive(Debug, PartialEq)]
 enum Kind {
@@ -100,11 +102,7 @@ impl<'a> TryFrom<&'a str> for Fields {
 
 impl std::fmt::Display for Fields {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let fields: String = self
-            .iter()
-            .filter(|&f| f.name != Dataclass::TARGET)
-            .map(|f| format!("    {}\n", f))
-            .collect();
+        let fields: String = self.iter().map(|f| format!("    {}\n", f)).collect();
         write!(f, "{}", fields)
     }
 }
@@ -118,16 +116,19 @@ impl Dataclass {
     const TARGET: &'static str = "_target_";
 }
 
+static TARGET_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\{_target_:([^}]+)\}").unwrap());
+
 impl<'a> TryFrom<&'a str> for Dataclass {
     type Error = anyhow::Error;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        let mut fields = Fields::try_from(value)?;
-        let Some(index) = fields.iter().position(|f| f.name == Dataclass::TARGET) else {
-            anyhow::bail!("{} field not found", Dataclass::TARGET)
-        };
-        let target = fields.vec.remove(index);
-        let name = target.default.clone();
+        let fields = Fields::try_from(value)?;
+        let name = TARGET_RE
+            .captures(value)
+            .and_then(|caps| caps.get(1))
+            .map(|m| m.as_str().to_string())
+            .ok_or_else(|| anyhow::anyhow!("{} field not found", Dataclass::TARGET))?;
+
         Ok(Dataclass { name, fields })
     }
 }
@@ -182,6 +183,12 @@ mod tests {
         assert_eq!(field.name, "is_deleted");
         assert_eq!(field.kind, Kind::Bool);
         assert_eq!(field.default, "False");
+    }
+
+    #[test]
+    fn test_field_from_invalid_parameter() {
+        let result = Field::try_from("{invalid}");
+        assert!(result.is_err());
     }
 
     #[test]
@@ -251,7 +258,7 @@ mod tests {
     #[test]
     fn test_fields_display() {
         let fields = Fields::try_from(
-            "{\n{_target_=abc}{count=10}{price=15.99}{name=Alice}{is_active=true}\n}",
+            "{\n{_target_:abc}{count=10}{price=15.99}{name=Alice}{is_active=true}\n}",
         )
         .unwrap();
 
@@ -271,7 +278,7 @@ mod tests {
     #[test]
     fn test_dataclass_from_str() {
         let dataclass = Dataclass::try_from(
-            "{\n{_target_=abc}{count=10}{price=15.99}{name=Alice}{is_active=true}\n}",
+            "{\n{_target_:abc}{count=10}{price=15.99}{name=Alice}{is_active=true}\n}",
         )
         .unwrap();
         assert_eq!(dataclass.name, "abc");
@@ -280,10 +287,16 @@ mod tests {
     #[test]
     fn test_dataclass_display() {
         let dataclass = Dataclass::try_from(
-            "{\n{_target_=abc}{count=10}{price=15.99}{name=Alice}{is_active=true}\n}",
+            "{\n{_target_:abc}{count=10}{price=15.99}{name=Alice}{is_active=true}\n}",
         )
         .unwrap();
         let expected = "@dataclass\nclass abc:\n    count: int = 10\n";
         assert!(dataclass.to_string().starts_with(expected));
+    }
+
+    #[test]
+    fn test_dataclass_missing_target() {
+        let result = Dataclass::try_from("{count=10}{price=15.99}{name=Alice}{is_active=true}");
+        assert!(result.is_err());
     }
 }
