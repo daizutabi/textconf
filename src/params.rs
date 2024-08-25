@@ -1,26 +1,58 @@
+//! This module provides functionality for parsing and manipulating parameters in a string.
+//! It includes the `ParameterReplacer` struct and the `ParameterIterator` struct to
+//! iterate over parameters in a string.
+//!
+//! The `ParameterReplacer` struct is used to find and replace parameters within a string.
+//! It collects all parameters and allows for their replacement with a given prefix.
+//!
+//! The `ParameterIterator` struct is used to iterate over the parameters in a string.
+//! It can be created from a string slice and provides an iterator over the parameters.
+//!
+//! # Examples
+//!
+//! ```
+//! use params::ParameterReplacer;
+//!
+//! let input = "{a}{b=2}{c:.2f=3.0}";
+//! let replacer = ParameterReplacer::new(input);
+//!
+//! // Get all parameters
+//! let parameters = replacer.parameters();
+//! assert_eq!(parameters.len(), 3);
+//! ```
+
 use std::collections::HashSet;
 use thiserror::Error;
 
+/// The `Brace` struct represents a section of a string enclosed in curly braces `{}`.
 #[derive(Debug, Copy, Clone, PartialEq)]
 struct Brace<'a> {
+    /// The original string slice.
     input: &'a str,
+    /// The starting position of the brace.
     start: usize,
+    /// The ending position of the brace.
     end: usize,
 }
 
 impl<'a> Brace<'a> {
+    /// Returns the content of the brace.
     pub fn content(&self) -> &'a str {
         &self.input[self.start + 1..self.end - 1]
     }
 }
 
+/// An iterator over the braces in a string.
 #[derive(Debug, Clone, PartialEq)]
 struct BraceIterator<'a> {
+    /// The original string slice.
     input: &'a str,
+    /// The current position in the string.
     start: usize,
 }
 
 impl<'a> BraceIterator<'a> {
+    /// Creates a new BraceIterator instance.
     fn new(input: &'a str) -> Self {
         BraceIterator { input, start: 0 }
     }
@@ -29,6 +61,7 @@ impl<'a> BraceIterator<'a> {
 impl<'a> Iterator for BraceIterator<'a> {
     type Item = Brace<'a>;
 
+    /// Returns the next brace in the string.
     fn next(&mut self) -> Option<Self::Item> {
         let input = &self.input[self.start..];
         let mut start = None;
@@ -79,41 +112,55 @@ impl<'a> From<&'a str> for BraceIterator<'a> {
     }
 }
 
+/// A struct representing a parameter in a string.
 #[derive(Debug, PartialEq)]
 pub struct Parameter<'a> {
+    /// The original string slice.
     input: &'a str,
+    /// The starting position of the brace.
     start: usize,
+    /// The ending position of the brace.
     end: usize,
+    /// The name of the parameter.
     name: &'a str,
-    fmt: Option<&'a str>,
+    /// The format of the parameter.
+    format: Option<&'a str>,
+    /// The default value of the parameter.
     default: Option<&'a str>,
 }
 
 impl<'a> Parameter<'a> {
+    /// Returns the starting position of the brace.
     pub fn start(&self) -> usize {
         self.start
     }
 
+    /// Returns the ending position of the brace.
     pub fn end(&self) -> usize {
         self.end
     }
 
+    /// Returns the content of the brace.
     pub fn content(&self) -> &str {
         &self.input[self.start + 1..self.end - 1]
     }
 
+    /// Returns the name of the parameter.
     pub fn name(&self) -> &str {
         self.name
     }
 
-    pub fn fmt(&self) -> Option<&str> {
-        self.fmt
+    /// Returns the format of the parameter.
+    pub fn format(&self) -> Option<&str> {
+        self.format
     }
 
+    /// Returns the default value of the parameter.
     pub fn default(&self) -> Option<&str> {
         self.default
     }
 
+    /// Returns the name of the parameter with the format.
     pub fn name_with_format(&self) -> &str {
         let end = self.end - self.default.map(|d| d.len() + 1).unwrap_or(0);
         &self.input[self.start + 1..end - 1]
@@ -137,7 +184,7 @@ impl<'a> TryFrom<Brace<'a>> for Parameter<'a> {
             None => (content, None),
         };
 
-        let (name, fmt) = match name_default.split_once(':') {
+        let (name, format) = match name_default.split_once(':') {
             Some((name, fmt)) => (name, Some(fmt)),
             None => (name_default, None),
         };
@@ -151,17 +198,20 @@ impl<'a> TryFrom<Brace<'a>> for Parameter<'a> {
             start: brace.start,
             end: brace.end,
             name,
-            fmt,
+            format,
             default,
         })
     }
 }
 
+/// An iterator over the parameters in a string.
 pub struct ParameterIterator<'a> {
+    /// The iterator over the braces in the string.
     brace_iter: BraceIterator<'a>,
 }
 
 impl<'a> ParameterIterator<'a> {
+    /// Creates a new ParameterIterator instance.
     pub fn new(input: &'a str) -> Self {
         ParameterIterator {
             brace_iter: BraceIterator::new(input),
@@ -172,6 +222,7 @@ impl<'a> ParameterIterator<'a> {
 impl<'a> Iterator for ParameterIterator<'a> {
     type Item = Parameter<'a>;
 
+    /// Returns the next parameter in the string.
     fn next(&mut self) -> Option<Self::Item> {
         while let Some(brace) = self.brace_iter.next() {
             if let Ok(param) = Parameter::try_from(brace) {
@@ -188,21 +239,53 @@ impl<'a> From<&'a str> for ParameterIterator<'a> {
     }
 }
 
+/// A struct that replaces parameters in a string with a specified prefix.
+///
+/// The `ParameterReplacer` struct is used to find and replace parameters within a string.
+/// It collects all parameters and allows for their replacement with a given prefix.
+///
+/// # Examples
+///
+/// ```
+/// use params::ParameterReplacer;
+///
+/// let input = "{a}{b=2}{c:.2f=3.0}";
+/// let replacer = ParameterReplacer::new(input);
+///
+/// // Get all parameters
+/// let parameters = replacer.parameters();
+/// assert_eq!(parameters.len(), 3);
+///
+/// // Get parameters with default values
+/// let parameters_with_default = replacer.parameters_with_default();
+/// assert_eq!(parameters_with_default.len(), 2);
+///
+/// // Get names of parameters with default values
+/// let names_with_default = replacer.names_with_default();
+/// assert_eq!(names_with_default, vec!["b", "c"]);
+///
+/// // Replace parameters with a prefix, deleting default values
+/// let replaced = replacer.replace("prefix.");
+/// assert_eq!(replaced, "{a}{prefix.b}{prefix.c:.2f}");
+/// ```
 pub struct ParameterReplacer<'a> {
     input: &'a str,
     parameters: Vec<Parameter<'a>>,
 }
 
 impl<'a> ParameterReplacer<'a> {
+    /// Creates a new ParameterReplacer instance.
     pub fn new(input: &'a str) -> Self {
         let parameters = ParameterIterator::new(input).collect();
         Self { input, parameters }
     }
 
+    /// Returns all parameters.
     pub fn parameters(&self) -> &[Parameter<'a>] {
         &self.parameters
     }
 
+    /// Returns all parameters with default values.
     pub fn parameters_with_default(&self) -> Vec<&Parameter<'a>> {
         self.parameters
             .iter()
@@ -210,6 +293,7 @@ impl<'a> ParameterReplacer<'a> {
             .collect()
     }
 
+    /// Returns the names of parameters with default values.
     pub fn names_with_default(&self) -> Vec<&str> {
         self.parameters_with_default()
             .iter()
@@ -217,6 +301,7 @@ impl<'a> ParameterReplacer<'a> {
             .collect()
     }
 
+    /// Replaces parameters with a specified prefix, deleting default values.
     pub fn replace(&self, prefix: &str) -> String {
         let mut result = String::new();
         let mut last_index = 0;
@@ -267,20 +352,20 @@ mod tests {
         let params: Vec<Parameter> = ParameterIterator::from(input).collect();
 
         assert_eq!(params[0].name(), "test");
+        assert_eq!(params[0].format(), None);
         assert_eq!(params[0].default(), None);
-        assert_eq!(params[0].fmt(), None);
 
         assert_eq!(params[1].name(), "test_default");
+        assert_eq!(params[1].format(), None);
         assert_eq!(params[1].default(), Some("default"));
-        assert_eq!(params[1].fmt(), None);
 
         assert_eq!(params[2].name(), "test_format");
+        assert_eq!(params[2].format(), Some(".2f"));
         assert_eq!(params[2].default(), None);
-        assert_eq!(params[2].fmt(), Some(".2f"));
 
         assert_eq!(params[3].name(), "test_both");
+        assert_eq!(params[3].format(), Some(".2f"));
         assert_eq!(params[3].default(), Some("3.14"));
-        assert_eq!(params[3].fmt(), Some(".2f"));
     }
 
     #[test]
