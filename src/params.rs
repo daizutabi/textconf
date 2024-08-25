@@ -22,13 +22,22 @@ impl<'a> Brace<'a> {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-struct Braces<'a> {
-    vec: Vec<Brace<'a>>,
+struct BraceIterator<'a> {
+    input: &'a str,
+    start: usize,
 }
 
-impl<'a> Braces<'a> {
+impl<'a> BraceIterator<'a> {
     fn new(input: &'a str) -> Self {
-        let mut vec = Vec::new();
+        BraceIterator { input, start: 0 }
+    }
+}
+
+impl<'a> Iterator for BraceIterator<'a> {
+    type Item = Brace<'a>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let input = &self.input[self.start..];
         let mut start = None;
         let mut prev = None;
 
@@ -47,10 +56,11 @@ impl<'a> Braces<'a> {
                 }
                 '}' => {
                     if let Some(start_index) = start {
-                        vec.push(Brace {
-                            input,
-                            start: start_index,
-                            end: index + 1,
+                        self.start += index + 1;
+                        return Some(Brace {
+                            input: self.input,
+                            start: self.start - (index + 1 - start_index),
+                            end: self.start,
                         });
                     }
                     prev = None;
@@ -66,21 +76,13 @@ impl<'a> Braces<'a> {
                 }
             }
         }
-        Braces { vec }
+        None
     }
 }
 
-impl<'a> From<&'a str> for Braces<'a> {
+impl<'a> From<&'a str> for BraceIterator<'a> {
     fn from(input: &'a str) -> Self {
-        Braces::new(input)
-    }
-}
-
-impl<'a> std::ops::Deref for Braces<'a> {
-    type Target = Vec<Brace<'a>>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.vec
+        BraceIterator::new(input)
     }
 }
 
@@ -95,11 +97,18 @@ impl Parameter {
     pub fn name(&self) -> &str {
         &self.name
     }
-    // pub fn fmt(&self) -> Option<&str> {
-    //     self.fmt.as_deref()
-    // }
+
     pub fn default(&self) -> Option<&str> {
         self.default.as_deref()
+    }
+
+    pub fn to_string_without_default(&self, prefix: Option<&str>) -> String {
+        let prefix = prefix.unwrap_or("");
+        let name = format!("{}{}", prefix, self.name);
+        match &self.fmt {
+            Some(fmt_value) => format!("{{{}:{}}}", name, fmt_value),
+            None => format!("{{{}}}", name),
+        }
     }
 }
 
@@ -151,53 +160,37 @@ impl std::fmt::Display for Parameter {
     }
 }
 
-impl Parameter {
-    fn to_string_without_default(&self, prefix: Option<&str>) -> String {
-        let prefix = prefix.unwrap_or("");
-        let name = format!("{}{}", prefix, self.name);
-        match &self.fmt {
-            Some(fmt_value) => format!("{{{}:{}}}", name, fmt_value),
-            None => format!("{{{}}}", name),
+pub struct Parameters<'a> {
+    braces: BraceIterator<'a>,
+}
+
+impl<'a> Parameters<'a> {
+    pub fn new(input: &'a str) -> Self {
+        Parameters {
+            braces: BraceIterator::new(input),
         }
     }
-}
 
-#[derive(Debug, PartialEq)]
-pub struct Parameters {
-    vec: Vec<Parameter>,
-}
-
-impl std::ops::Deref for Parameters {
-    type Target = Vec<Parameter>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.vec
-    }
-}
-
-impl From<&str> for Parameters {
-    fn from(value: &str) -> Self {
-        let vec = Braces::new(value)
-            .iter()
-            .filter_map(|s| Parameter::try_from(s).ok())
-            .collect();
-        Parameters { vec }
-    }
-}
-
-impl Parameters {
     pub fn replace_without_default(&self, input: &str, prefix: Option<&str>) -> String {
-        let names_with_default: std::collections::HashSet<_> = self
-            .vec
+        let mut braces = BraceIterator::new(input);
+        let mut parameters = Vec::new();
+
+        while let Some(brace) = braces.next() {
+            if let Ok(param) = Parameter::try_from(&brace) {
+                parameters.push(param);
+            }
+        }
+
+        let names_with_default: std::collections::HashSet<_> = parameters
             .iter()
-            .filter(|&p| p.default().is_some())
-            .map(|p| p.name())
+            .filter(|p| p.default().is_some())
+            .map(|p| p.name().to_string())
             .collect();
 
         let mut result = String::new();
         let mut last_index = 0;
 
-        for param in &self.vec {
+        for param in parameters {
             if names_with_default.contains(param.name()) {
                 let from = param.to_string();
                 let to = param.to_string_without_default(prefix);
@@ -212,6 +205,50 @@ impl Parameters {
         result.push_str(&input[last_index..]);
         result
     }
+    // pub fn replace_without_default(&self, input: &str, prefix: Option<&str>) -> String {
+    //     let names_with_default: std::collections::HashSet<_> = self
+    //         .into_iter()
+    //         .filter(|p| p.default().is_some())
+    //         .map(|p| p.name().to_string())
+    //         .collect();
+
+    //     let mut result = String::new();
+    //     let mut last_index = 0;
+
+    //     for param in self.clone() {
+    //         if names_with_default.contains(param.name()) {
+    //             let from = param.to_string();
+    //             let to = param.to_string_without_default(prefix);
+    //             if let Some(start) = input[last_index..].find(&from) {
+    //                 let start = last_index + start;
+    //                 result.push_str(&input[last_index..start]);
+    //                 result.push_str(&to);
+    //                 last_index = start + from.len();
+    //             }
+    //         }
+    //     }
+    //     result.push_str(&input[last_index..]);
+    //     result
+    // }
+}
+
+impl<'a> Iterator for Parameters<'a> {
+    type Item = Parameter;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while let Some(brace) = self.braces.next() {
+            if let Ok(param) = Parameter::try_from(&brace) {
+                return Some(param);
+            }
+        }
+        None
+    }
+}
+
+impl<'a> From<&'a str> for Parameters<'a> {
+    fn from(value: &'a str) -> Self {
+        Parameters::new(value)
+    }
 }
 
 #[cfg(test)]
@@ -222,8 +259,8 @@ mod tests {
 
     #[test]
     fn braces_simple() {
-        let braces = Braces::new("abc{def}ghi{jkl}mno");
-        let vec: Vec<_> = braces.iter().map(Brace::as_str).collect();
+        let braces = BraceIterator::new("abc{def}ghi{jkl}mno");
+        let vec: Vec<_> = braces.map(|brace| brace.as_str()).collect();
         assert_eq!(vec, vec!["{def}", "{jkl}"]);
     }
 
@@ -233,8 +270,8 @@ mod tests {
     #[case("a{{{x}}}b{{{y}}}c{{z}}d{{{{z}}}}")]
     #[case("{a{{{x}}}b{{{y}}}c{{z}}d}")]
     fn extract_braces_nested(#[case] input: &str) {
-        let braces = Braces::new(input);
-        let vec: Vec<_> = braces.iter().map(Brace::as_str).collect();
+        let braces = BraceIterator::new(input);
+        let vec: Vec<_> = braces.map(|brace| brace.as_str()).collect();
         assert_eq!(vec, vec!["{x}", "{y}"]);
     }
 
@@ -271,7 +308,6 @@ mod tests {
     fn test_replace_with_prefix() {
         let input = "{a}{b=2}{c:.2f=3.0}{a:.2f}{b:.1f}{c}{{b}}";
         let params = Parameters::from(input);
-        assert_eq!(params.len(), 6);
         assert_eq!(
             params.replace_without_default(input, Some("p.")),
             "{a}{p.b}{p.c:.2f}{a:.2f}{p.b:.1f}{p.c}{{b}}"
