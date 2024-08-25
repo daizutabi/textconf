@@ -25,18 +25,6 @@ pub fn is_float(value: &str) -> bool {
     (is_float(parts[0]) || is_int(parts[0])) && is_int(parts[1])
 }
 
-pub fn is_true(x: &str) -> bool {
-    x.to_lowercase() == "true"
-}
-
-pub fn is_false(x: &str) -> bool {
-    x.to_lowercase() == "false"
-}
-
-pub(crate) fn is_bool(x: &str) -> bool {
-    is_true(x) || is_false(x)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -82,42 +70,5 @@ mod tests {
             assert_eq!(is_float(format!("-{value}").as_str()), true);
             assert_eq!(is_float(value.to_uppercase().as_str()), true);
         }
-    }
-
-    #[rstest]
-    #[case("true", true)]
-    #[case("TRUE", true)]
-    #[case("True", true)]
-    #[case("false", false)]
-    #[case("FALSE", false)]
-    #[case("False", false)]
-    #[case("other", false)]
-    fn test_is_true(#[case] input: &str, #[case] expected: bool) {
-        assert_eq!(is_true(input), expected);
-    }
-
-    #[rstest]
-    #[case("false", true)]
-    #[case("FALSE", true)]
-    #[case("False", true)]
-    #[case("true", false)]
-    #[case("TRUE", false)]
-    #[case("True", false)]
-    #[case("other", false)]
-    fn test_is_false(#[case] input: &str, #[case] expected: bool) {
-        assert_eq!(is_false(input), expected);
-    }
-
-    #[rstest]
-    #[case("true", true)]
-    #[case("TRUE", true)]
-    #[case("True", true)]
-    #[case("false", true)]
-    #[case("FALSE", true)]
-    #[case("False", true)]
-    #[case("other", false)]
-    #[case("", false)]
-    fn test_is_bool(#[case] input: &str, #[case] expected: bool) {
-        assert_eq!(is_bool(input), expected);
     }
 }

@@ -1,5 +1,5 @@
 use crate::params::{Parameter, ParameterReplacer};
-use crate::types::{is_bool, is_float, is_int, is_true};
+use crate::types::{is_float, is_int};
 use thiserror::Error;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -8,25 +8,97 @@ enum Kind {
     Float,
     String,
     Bool,
+    List(Box<Kind>),
+    Class(String),
+}
+
+impl From<&str> for Kind {
+    fn from(default: &str) -> Self {
+        match default {
+            d if is_int(d) => Kind::Int,
+            d if is_float(d) => Kind::Float,
+            d => {
+                if d == "True" || d == "False" {
+                    Kind::Bool
+                } else if d.starts_with('[') && d.ends_with(']') {
+                    let inner = &d[1..d.len() - 1];
+                    Kind::List(Box::new(Kind::from(inner)))
+                } else {
+                    Kind::String
+                }
+            }
+        }
+    }
 }
 
 impl std::fmt::Display for Kind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let value = match self {
-            &Kind::Int => "int",
-            &Kind::Float => "float",
-            &Kind::String => "str",
-            &Kind::Bool => "bool",
-        };
-        write!(f, "{}", value)
+        match self {
+            Kind::Int => write!(f, "int"),
+            Kind::Float => write!(f, "float"),
+            Kind::String => write!(f, "str"),
+            Kind::Bool => write!(f, "bool"),
+            Kind::List(ref k) => write!(f, "list[{}]", k),
+            Kind::Class(ref name) => write!(f, "{}", name),
+        }
     }
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct Field<'a> {
-    name: &'a str,
+pub struct Field {
+    name: String,
     kind: Kind,
-    default: &'a str,
+    default: String,
+}
+
+#[derive(Error, Debug)]
+pub enum FieldError {
+    #[error("Parameter default is empty: found {0}")]
+    EmptyDefault(String),
+}
+
+impl<'a> TryFrom<&'a Parameter<'a>> for Field {
+    type Error = FieldError;
+
+    fn try_from(param: &'a Parameter<'a>) -> Result<Self, Self::Error> {
+        let Some(default) = param.default() else {
+            return Err(FieldError::EmptyDefault(param.content().to_string()));
+        };
+        let name = param.name().to_string();
+        let kind = Kind::from(default);
+        let default = default.to_string();
+        Ok(Field {
+            name,
+            kind,
+            default,
+        })
+    }
+}
+
+pub struct FieldList {
+    source: String,
+    fields: Vec<Field>,
+}
+
+impl FieldList {
+    pub fn new(input: &str, prefix: &str) -> Result<Self, FieldError> {
+        let replacer = ParameterReplacer::new(input);
+        let source = replacer.replace(prefix);
+        let fields = replacer
+            .parameters_with_default()
+            .into_iter()
+            .map(|p| Field::try_from(p))
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(FieldList { source, fields })
+    }
+
+    pub fn source(&self) -> &str {
+        &self.source
+    }
+
+    pub fn fields(&self) -> &[Field] {
+        &self.fields
+    }
 }
 
 // impl Field {
@@ -46,38 +118,6 @@ pub struct Field<'a> {
 //             }
 //             None => None,
 //         }
-//     }
-// }
-
-// #[derive(Debug, Error)]
-// pub enum FieldError {
-//     #[error("missing default value: {0}")]
-//     MissingDefault(String),
-// }
-
-// impl TryFrom<&Parameter> for Field {
-//     type Error = FieldError;
-
-//     fn try_from(param: &Parameter) -> Result<Self, Self::Error> {
-//         let default = param
-//             .default()
-//             .ok_or_else(|| FieldError::MissingDefault(param.name().to_string()))?;
-
-//         let (kind, default) = match default {
-//             d if is_bool(d) => (
-//                 Kind::Bool,
-//                 if is_true(d) { "True" } else { "False" }.to_string(),
-//             ),
-//             d if is_int(d) => (Kind::Int, d.to_string()),
-//             d if is_float(d) => (Kind::Float, d.to_string()),
-//             d => (Kind::String, d.to_string()),
-//         };
-
-//         Ok(Field {
-//             name: param.name().to_string(),
-//             kind,
-//             default,
-//         })
 //     }
 // }
 
@@ -201,6 +241,96 @@ pub struct Field<'a> {
 //         write!(f, "{}\n{}", cls, self.fields)
 //     }
 // }
+#[cfg(test)]
+mod kind_tests {
+    use super::*;
+    use pretty_assertions::assert_eq;
+
+    #[test]
+    fn test_kind_from_int() {
+        assert_eq!(Kind::from("42"), Kind::Int);
+    }
+
+    #[test]
+    fn test_kind_from_float() {
+        assert_eq!(Kind::from("3.14"), Kind::Float);
+        assert_eq!(Kind::from("3.14e-10"), Kind::Float);
+    }
+
+    #[test]
+    fn test_kind_from_bool_true() {
+        assert_eq!(Kind::from("True"), Kind::Bool);
+    }
+
+    #[test]
+    fn test_kind_from_bool_false() {
+        assert_eq!(Kind::from("False"), Kind::Bool);
+    }
+
+    #[test]
+    fn test_kind_from_list() {
+        assert_eq!(Kind::from("[42]"), Kind::List(Box::new(Kind::Int)));
+    }
+
+    #[test]
+    fn test_kind_from_string() {
+        assert_eq!(Kind::from("hello"), Kind::String);
+    }
+
+    #[test]
+    fn test_kind_display_int() {
+        assert_eq!(Kind::Int.to_string(), "int");
+    }
+
+    #[test]
+    fn test_kind_display_float() {
+        assert_eq!(Kind::Float.to_string(), "float");
+    }
+
+    #[test]
+    fn test_kind_display_string() {
+        assert_eq!(Kind::String.to_string(), "str");
+    }
+
+    #[test]
+    fn test_kind_display_bool() {
+        assert_eq!(Kind::Bool.to_string(), "bool");
+    }
+
+    #[test]
+    fn test_kind_display_list() {
+        assert_eq!(Kind::List(Box::new(Kind::Int)).to_string(), "list[int]");
+    }
+
+    #[test]
+    fn test_kind_display_class() {
+        assert_eq!(Kind::Class("MyClass".to_string()).to_string(), "MyClass");
+    }
+
+    #[test]
+    fn test_field_try_from_parameter() {
+        let input = "{a}{b=2}{c:.2f=3.0}";
+        let replacer = ParameterReplacer::new(input);
+        let params = replacer.parameters_with_default();
+        let field = Field::try_from(params[0]).unwrap();
+        assert_eq!(field.name, "b");
+        assert_eq!(field.kind, Kind::Int);
+        assert_eq!(field.default, "2");
+        let field = Field::try_from(params[1]).unwrap();
+        assert_eq!(field.name, "c");
+        assert_eq!(field.kind, Kind::Float);
+        assert_eq!(field.default, "3.0");
+    }
+
+    #[test]
+    fn test_field_list_new() {
+        let input = "{a}{b=2}{c.d:.2f=3.0}";
+        let source = "{a}{p.b}{p.c.d:.2f}";
+        let field_list = FieldList::new(input, "p.").unwrap();
+        assert_eq!(field_list.source(), source);
+        assert_eq!(field_list.fields().len(), 2);
+    }
+}
 
 // #[cfg(test)]
 // mod tests {
