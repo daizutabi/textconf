@@ -1,0 +1,56 @@
+site_name: textconf
+site_url: https://daizutabi.github.io/textconf/
+site_description: textconf integrates Hydra and MLflow to manage and track machine learning experiments.
+site_author: daizutabi
+repo_url: https://github.com/daizutabi/textconf/
+repo_name: daizutabi/textconf
+edit_uri: edit/main/docs/
+theme:
+  name: material
+  font:
+    text: Fira Sans
+    code: Fira Code
+  icon:
+    repo: fontawesome/brands/github
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark mode
+    - scheme: slate
+      primary: black
+      accent: black
+      toggle:
+        icon: material/weather-night
+        name: Switch to light mode
+  features:
+    - content.code.annotate
+    - content.tooltips
+    - navigation.expand
+    - navigation.footer
+    - navigation.indexes
+    - navigation.sections
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.top
+    - navigation.tracking
+plugins:
+  - search
+  - markdown-exec
+  - mkapi
+markdown_extensions:
+  - pymdownx.magiclink
+  - pymdownx.highlight:
+      use_pygments: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+nav:
+  - Home: index.md
+  - Usage:
+      - Hydra application: usage/hydra.md
+  - Reference: $api/textconf.**

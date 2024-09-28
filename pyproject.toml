@@ -1,0 +1,90 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "textconf"
+version = "0.1.1"
+description = "Jinja2-based text generation from configuration objects"
+readme = "README.md"
+license = "MIT"
+authors = [{ name = "daizutabi", email = "daizutabi@gmail.com" }]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+]
+requires-python = ">=3.10"
+dependencies = ["jinja2", "omegaconf"]
+
+
+[project.urls]
+Documentation = "https://github.com/daizutabi/textconf"
+Source = "https://github.com/daizutabi/textconf"
+Issues = "https://github.com/daizutabi/textconf/issues"
+
+[tool.uv]
+dev-dependencies = [
+  "markdown-exec[ansi]",
+  "mkapi",
+  "mkdocs-material",
+  "mkdocs>=1.6",
+  "pytest-clarity",
+  "pytest-cov",
+  "pytest-randomly",
+  "pytest-xdist",
+  "ruff",
+]
+
+[tool.hatch.build.targets.sdist]
+exclude = ["/.github", "/docs"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/textconf"]
+
+[tool.pytest.ini_options]
+addopts = ["--doctest-modules", "--cov=textconf", "--cov-report=lcov:lcov.info"]
+doctest_optionflags = ["NORMALIZE_WHITESPACE", "IGNORE_EXCEPTION_DETAIL"]
+filterwarnings = ['ignore:pkg_resources is deprecated:DeprecationWarning']
+
+[tool.coverage.report]
+exclude_lines = ["no cov", "raise NotImplementedError", "if TYPE_CHECKING:"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["ALL"]
+unfixable = ["F401"]
+ignore = [
+  "ANN002",
+  "ANN003",
+  "ANN401",
+  "ARG002",
+  "B904",
+  "D105",
+  "D107",
+  "D203",
+  "D213",
+  "EM101",
+  "PGH003",
+  "TRY003",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = [
+  "A001",
+  "ANN",
+  "ARG",
+  "D",
+  "FBT",
+  "PD",
+  "PLR",
+  "PT",
+  "S",
+  "SIM117",
+  "SLF",
+]
