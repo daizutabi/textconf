@@ -1,2 +1,7 @@
-/target
-lcov*.info
+.coverage
+.env
+.venv/
+__pycache__/
+dist/
+lcov.info
+uv.lock
