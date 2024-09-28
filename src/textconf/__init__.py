@@ -6,6 +6,6 @@ It allows for easy creation, updating, and rendering of configuration
 objects, with support for custom methods and dynamic content.
 """
 
-from .config import BaseConfig
+from .config import BaseConfig, Renderable
 
-__all__ = ["BaseConfig"]
+__all__ = ["BaseConfig", "Renderable"]
