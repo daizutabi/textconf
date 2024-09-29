@@ -59,7 +59,7 @@ class BaseConfig(Renderable):
         """
 
     @classmethod
-    def render(cls, cfg: Self, **kwargs) -> str:
+    def render(cls, cfg: Self, *args: dict[str, Any] | list[str], **kwargs) -> str:
         """Render text from the specified configuration.
 
         This method locates the template file, updates the configuration,
@@ -70,6 +70,8 @@ class BaseConfig(Renderable):
         Args:
             cfg (BaseConfig): The configuration instance to render the
                 text from.
+            *args (dict[str, Any] | list[str]): Additional positional arguments to
+                include in the template context.
             **kwargs: Additional keyword arguments to pass to the
                 template rendering.
 
@@ -90,7 +92,7 @@ class BaseConfig(Renderable):
                 params[name] = obj(cfg)
 
         template_file = get_template_file(cls, cfg._template_)
-        return render(template_file, cfg, **params)
+        return render(template_file, cfg, *args, **params)
 
 
 def iter_template_methods(cls: object) -> Iterator[tuple[str, Callable[[Any], str]]]:
