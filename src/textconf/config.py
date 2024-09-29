@@ -7,18 +7,15 @@ It supports dynamic discovery of template methods within classes.
 
 from __future__ import annotations
 
-import inspect
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from inspect import Signature
 from pathlib import Path  # noqa: TCH003
-from typing import TYPE_CHECKING, TypeGuard
+from typing import TYPE_CHECKING
 
 from .render import render
-from .template import get_template_file
+from .template import get_template_file, iter_template_methods
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterator
     from typing import Any, Self
 
 
@@ -40,7 +37,7 @@ class BaseConfig(Renderable):
     and methods for updating and rendering text based on templates.
 
     Attributes:
-        _template_ (str): The name of the template file.
+        _template_ (str | Path): The name or path of the template file.
 
     """
 
@@ -48,13 +45,13 @@ class BaseConfig(Renderable):
 
     @classmethod
     def update(cls, cfg: Self) -> None:
-        """Update the configuration in-place with new values.
+        """Update the configuration in-place.
 
         This method should be overridden by subclasses to update
         configuration parameters before rendering the template.
 
         Args:
-            cfg (BaseConfig): The configuration instance to be updated.
+            cfg (Self): The configuration instance to be updated.
 
         """
 
@@ -68,10 +65,10 @@ class BaseConfig(Renderable):
         in the class.
 
         Args:
-            cfg (BaseConfig): The configuration instance to render the
+            cfg (Self): The configuration instance to render the
                 text from.
-            *args (dict[str, Any] | list[str]): Additional positional arguments to
-                include in the template context.
+            *args (dict[str, Any] | list[str]): Additional positional
+                arguments to include in the template context.
             **kwargs: Additional keyword arguments to pass to the
                 template rendering.
 
@@ -93,53 +90,3 @@ class BaseConfig(Renderable):
 
         template_file = get_template_file(cls, cfg._template_)
         return render(template_file, cfg, *args, **params)
-
-
-def iter_template_methods(cls: object) -> Iterator[tuple[str, Callable[[Any], str]]]:
-    """Yield name and method pairs of template methods from a given class.
-
-    This function iterates over all members of a class, checks if each member
-    is a template method using the `is_template_method` function, and yields the
-    name and the method itself if it is a template method.
-
-    Args:
-        cls (object): The class object whose members are to be checked
-            for being template methods.
-
-    Yields:
-        tuple[str, Callable[[Any], str]]: An iterator of tuples, each
-        containing the name of the template method and the method
-        itself.
-
-    """
-    members = inspect.getmembers(cls)
-    for name, obj in members:
-        if not name.startswith("_") and is_template_method(obj):
-            yield name, obj
-
-
-def is_template_method(obj: object) -> TypeGuard[Callable[[Any], str]]:
-    """Check if the object is a template method with specific characteristics.
-
-    A template method in this context is considered to be a method that:
-    - Is a bound method of a class (not a static or free function).
-    - Accepts exactly one argument.
-    - Has a return annotation that is neither None nor missing.
-
-    Args:
-        obj (object): The object to be inspected and verified.
-
-    Returns:
-        bool: True if the object is a method that matches the template
-        method criteria, with a return annotation other than None.
-        False otherwise.
-
-    """
-    if not inspect.ismethod(obj) or not inspect.isclass(obj.__self__):
-        return False
-
-    signature = inspect.signature(obj)
-    if signature.return_annotation in [None, "None", Signature.empty]:
-        return False
-
-    return len(signature.parameters) == 1

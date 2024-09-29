@@ -1,7 +1,15 @@
 """Template file handling."""
 
+from __future__ import annotations
+
 import inspect
+from inspect import Signature
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterator
+    from typing import Any, TypeGuard
 
 
 def get_template_file(
@@ -58,3 +66,52 @@ def _get_template_file_from_dir(file: Path, dir: str | Path, from_dir: Path) -> 
         return _get_template_file_from_dir(file, dir, from_dir.parent)
 
     raise FileNotFoundError
+
+
+def iter_template_methods(cls: object) -> Iterator[tuple[str, Callable[[Any], Any]]]:
+    """Yield name and method pairs of template methods from a given class.
+
+    Iterate over all members of a class, check if each member is a template
+    method using the `is_template_method` function, and yield the name
+    and the method itself if it is a template method.
+
+    Args:
+        cls (object): The class object whose members are to be checked
+            for being template methods.
+
+    Yields:
+        tuple[str, Callable[[Any], Any]]: Tuples, each containing the name
+        of the template method and the method itself.
+
+    """
+    members = inspect.getmembers(cls)
+    for name, obj in members:
+        if not name.startswith("_") and is_template_method(obj):
+            yield name, obj
+
+
+def is_template_method(obj: object) -> TypeGuard[Callable[[Any], Any]]:
+    """Check if the object is a template method.
+
+    A template method in this context is considered to be a method that
+
+    - Is a bound method of a class (not a static or free function).
+    - Accepts exactly one argument.
+    - Has a return annotation that is neither None nor missing.
+
+    Args:
+        obj (object): The object to be inspected.
+
+    Returns:
+        bool: True if the object is a method that matches the template
+        method criteria. False otherwise.
+
+    """
+    if not inspect.ismethod(obj) or not inspect.isclass(obj.__self__):
+        return False
+
+    signature = inspect.signature(obj)
+    if signature.return_annotation in [None, "None", Signature.empty]:
+        return False
+
+    return len(signature.parameters) == 1

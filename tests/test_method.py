@@ -28,49 +28,49 @@ class Class:
 
 
 def test_is_template_method_normal():
-    from textconf.config import is_template_method
+    from textconf.template import is_template_method
 
     assert not is_template_method(Class.m)
 
 
 def test_is_template_method_static():
-    from textconf.config import is_template_method
+    from textconf.template import is_template_method
 
     assert not is_template_method(Class.s)
 
 
 def test_is_template_method_int():
-    from textconf.config import is_template_method
+    from textconf.template import is_template_method
 
     assert is_template_method(Class.c_int)
 
 
 def test_is_template_method_str():
-    from textconf.config import is_template_method
+    from textconf.template import is_template_method
 
     assert is_template_method(Class.c_str)
 
 
 def test_is_template_method_none():
-    from textconf.config import is_template_method
+    from textconf.template import is_template_method
 
     assert not is_template_method(Class.c_none)
 
 
 def test_is_template_method_noann():
-    from textconf.config import is_template_method
+    from textconf.template import is_template_method
 
     assert not is_template_method(Class.c_noann)
 
 
 def test_is_template_method_two():
-    from textconf.config import is_template_method
+    from textconf.template import is_template_method
 
     assert not is_template_method(Class.c_two)
 
 
 def test_iter_template_methods():
-    from textconf.config import iter_template_methods
+    from textconf.template import iter_template_methods
 
     it = iter_template_methods(Class)
     assert next(it) == ("c_int", Class.c_int)

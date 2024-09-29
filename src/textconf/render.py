@@ -69,7 +69,7 @@ def render(
     if args:
         dotlist = []
         for arg in args:
-            dotlist.extend(to_dotlist(arg))
+            dotlist.extend(to_dotlist(arg) if isinstance(arg, dict) else arg)
 
         arg = OmegaConf.from_dotlist(dotlist)
         cfg = OmegaConf.merge(cfg, arg)
@@ -78,8 +78,8 @@ def render(
     return template.render(cfg, **kwargs)
 
 
-def to_dotlist(cfg: dict[str, Any] | list[str]) -> list[str]:
-    """Convert a dictionary to a dotlist string.
+def to_dotlist(cfg: dict[str, Any]) -> list[str]:
+    """Convert a dictionary to a list of dotlist strings.
 
     Args:
         cfg (dict[str, Any]): The dictionary to convert to a dotlist string.
@@ -88,7 +88,4 @@ def to_dotlist(cfg: dict[str, Any] | list[str]) -> list[str]:
         list[str]: A list of dotlist strings.
 
     """
-    if isinstance(cfg, list):
-        return cfg
-
     return [f"{k}={v}" for k, v in cfg.items()]
