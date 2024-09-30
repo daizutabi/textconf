@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from pathlib import Path  # noqa: TCH003
 from typing import TYPE_CHECKING
 
 from .render import render
@@ -41,7 +40,7 @@ class BaseConfig(Renderable):
 
     """
 
-    _template_: str | Path = ""
+    _template_: str = ""
 
     @classmethod
     def update(cls, cfg: Self) -> None:
