@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import inspect
-from inspect import Parameter, Signature
+from inspect import Signature
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Iterator
+    from collections.abc import Callable, Iterator
     from typing import Any, TypeGuard
 
 
