@@ -120,8 +120,8 @@ def is_template_method(obj: object) -> TypeGuard[Callable[[Any], Any]]:
 def is_template_params(params: Iterable[Parameter]) -> bool:
     """Check if the parameters are valid template parameters.
 
-    A valid template parameter is a positional or keyword parameter that is
-    not a variable positional or keyword parameter.
+    A valid template parameter is a positional or keyword parameter that has
+    no default value and is not a variable positional or keyword parameter.
 
     """
     params = list(params)
