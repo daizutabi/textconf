@@ -114,20 +114,4 @@ def is_template_method(obj: object) -> TypeGuard[Callable[[Any], Any]]:
     if signature.return_annotation in [None, "None", Signature.empty]:
         return False
 
-    return is_template_params(signature.parameters.values())
-
-
-def is_template_params(params: Iterable[Parameter]) -> bool:
-    """Check if the parameters are valid template parameters.
-
-    A valid template parameter is a positional or keyword parameter that has
-    no default value and is not a variable positional or keyword parameter.
-
-    """
-    params = list(params)
-
-    for p in params:
-        if p.kind in [Parameter.VAR_POSITIONAL, Parameter.VAR_KEYWORD]:
-            return False
-
-    return len([p for p in params if p.default == Parameter.empty]) == 1
+    return len(signature.parameters) == 1
