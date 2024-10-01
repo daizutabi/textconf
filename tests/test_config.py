@@ -58,6 +58,7 @@ def test_render_eq():
 
 def test_render_in():
     cfg = Config(x=2)
+    Config.update(cfg)
     assert_render_in(cfg, "|Y4|")
 
 

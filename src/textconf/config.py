@@ -43,18 +43,6 @@ class BaseConfig(Renderable):
     _template_: str = ""
 
     @classmethod
-    def update(cls, cfg: Self) -> None:
-        """Update the configuration in-place.
-
-        This method should be overridden by subclasses to update
-        configuration parameters before rendering the template.
-
-        Args:
-            cfg (Self): The configuration instance to be updated.
-
-        """
-
-    @classmethod
     def render(cls, cfg: Self, *args: dict[str, Any] | list[str], **kwargs) -> str:
         """Render text from the specified configuration.
 
@@ -79,8 +67,6 @@ class BaseConfig(Renderable):
                 in any of the searched directories.
 
         """
-        cls.update(cfg)
-
         params = kwargs.copy()
 
         for name, obj in iter_template_methods(cls):
