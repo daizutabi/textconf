@@ -94,3 +94,27 @@ def test_render_endswith_raises():
     cfg = Config(x=5)
     with pytest.raises(AssertionError):
         assert_render_endswith(cfg, "|Zzz")
+
+
+@dataclass
+class Context(BaseConfig):
+    _template_: str = "template.jinja"
+    x: int = 0
+
+    @classmethod
+    def context(cls, cfg: Self) -> dict[str, int | str]:
+        y = cls.y(cfg)
+        return {"y": y, "z": cls.z(cfg, y)}
+
+    @classmethod
+    def y(cls, cfg: Self) -> int:
+        return 2 * cfg.x
+
+    @classmethod
+    def z(cls, cfg: Self, y: int) -> str:
+        return "z" * (cfg.x + y)
+
+
+def test_context():
+    cfg = Context(x=2)
+    assert_render_eq(cfg, "X2|Y4|Zzzzzzz")
