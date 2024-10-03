@@ -23,6 +23,11 @@ class Renderable(ABC):
     """Represent a renderable class."""
 
     @classmethod
+    def context(cls, cfg: Self) -> dict[str, Any]:  # noqa: ARG003
+        """Get the context for rendering."""
+        return {}
+
+    @classmethod
     @abstractmethod
     def render(cls, cfg: Self, *args, **kwargs) -> str:
         """Render the given configuration and return a string."""
@@ -67,7 +72,8 @@ class BaseConfig(Renderable):
                 in any of the searched directories.
 
         """
-        params = kwargs.copy()
+        params = cls.context(cfg)
+        params.update(kwargs)
 
         for name, obj in iter_template_methods(cls):
             if name not in params:
