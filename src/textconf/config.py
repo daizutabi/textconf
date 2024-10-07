@@ -72,12 +72,12 @@ class BaseConfig(Renderable):
                 in any of the searched directories.
 
         """
-        params = cls.context(cfg)
-        params.update(kwargs)
+        params = {k: v for k, v in cls.context(cfg).items() if v is not None}
+        params.update({k: v for k, v in kwargs.items() if v is not None})
 
         for name, obj in iter_template_methods(cls):
-            if name not in params:
-                params[name] = obj(cfg)
+            if name not in params and (value := obj(cfg)) is not None:
+                params[name] = value
 
         template_file = get_template_file(cls, cfg._template_)
         return render(template_file, cfg, *args, **params)

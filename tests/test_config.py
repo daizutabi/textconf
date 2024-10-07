@@ -124,3 +124,8 @@ def test_context_kwargs():
     cfg = Context(x=2)
     assert_render_eq(cfg, "X2|Y3|Zzzzzzz", y=3)
     assert_render_eq(cfg, "X2|Y3|ZA", y=3, z="A")
+
+
+def test_context_kwargs_none():
+    cfg = Context(x=2)
+    assert_render_eq(cfg, "X2|Y4|Zzzzzzz", z=None)
