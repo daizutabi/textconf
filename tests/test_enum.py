@@ -26,6 +26,7 @@ class Model(RenderableEnum):
 @dataclass
 class Config(BaseConfig):
     model: Model = Model.MISSING
+    y: int = 1
 
 
 @dataclass
@@ -46,7 +47,7 @@ class B(Config):
         return "2"
 
 
-TEMPLATE_FILE = "{{x}}"
+TEMPLATE_FILE = "{{x}}|{{y}}"
 
 
 @pytest.fixture()
@@ -62,17 +63,29 @@ def _setup(monkeypatch: MonkeyPatch, template_file: Path):
     yield
 
 
-@pytest.mark.parametrize(("model", "x"), [(Model.A, "1"), (Model.B, "2")])
+@pytest.mark.parametrize(("model", "x"), [(Model.A, "1|1"), (Model.B, "2|1")])
 def test_render(model: Model, x: str):
     cfg = Config("template.jinja", model=model)
     assert cfg.model.render(cfg) == x
 
 
-@pytest.mark.parametrize(("model", "x"), [(Model.A, "1"), (Model.B, "2")])
+@pytest.mark.parametrize(("model", "x"), [(Model.A, "1|1"), (Model.B, "2|1")])
 def test_render_structured(model: Model, x: str):
     cfg = Config("template.jinja", model=model)
     cfg = OmegaConf.structured(cfg)
     assert cfg.model.render(cfg) == x
+
+
+@pytest.mark.parametrize(("model", "x"), [(Model.A, "1|10"), (Model.B, "2|10")])
+def test_render_args(model: Model, x: str):
+    cfg = Config("template.jinja", model=model)
+    assert cfg.model.render(cfg, {"y": 10}) == x
+
+
+@pytest.mark.parametrize(("model", "x"), [(Model.A, "1|100"), (Model.B, "2|100")])
+def test_render_kwargs(model: Model, x: str):
+    cfg = Config("template.jinja", model=model)
+    assert cfg.model.render(cfg, y=100) == x
 
 
 def test_missing():
