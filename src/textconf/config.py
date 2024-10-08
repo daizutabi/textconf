@@ -76,6 +76,9 @@ class BaseConfig(Renderable):
         params.update({k: v for k, v in kwargs.items() if v is not None})
 
         for name, obj in iter_template_methods(cls):
+            if name in ["render", "context"]:
+                continue
+
             if name not in params and (value := obj(cfg)) is not None:
                 params[name] = value
 
