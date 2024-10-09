@@ -7,5 +7,6 @@ objects, with support for custom methods and dynamic content.
 """
 
 from .config import BaseConfig, Renderable
+from .enum import RenderableEnum
 
-__all__ = ["BaseConfig", "Renderable"]
+__all__ = ["BaseConfig", "Renderable", "RenderableEnum"]
