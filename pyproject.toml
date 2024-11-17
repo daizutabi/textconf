@@ -7,7 +7,7 @@ name = "textconf"
 version = "0.2.3"
 description = "Jinja2-based text generation from configuration objects"
 readme = "README.md"
-license = "MIT"
+license = { file = "LICENSE" }
 authors = [{ name = "daizutabi", email = "daizutabi@gmail.com" }]
 classifiers = [
   "Development Status :: 4 - Beta",
