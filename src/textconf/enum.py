@@ -1,4 +1,4 @@
-"""Provide renderable enums."""  # noqa: A005
+"""Provide renderable enums."""
 
 from __future__ import annotations
 
