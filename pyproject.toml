@@ -21,7 +21,7 @@ requires-python = ">=3.10"
 dependencies = ["jinja2", "omegaconf"]
 
 [project.urls]
-Documentation = "https://github.com/daizutabi/textconf"
+Documentation = "https://daizutabi.github.io/textconf/"
 Source = "https://github.com/daizutabi/textconf"
 Issues = "https://github.com/daizutabi/textconf/issues"
 
