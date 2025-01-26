@@ -44,8 +44,7 @@ exclude = ["/.github", "/docs"]
 packages = ["src/textconf"]
 
 [tool.pytest.ini_options]
-addopts = ["--doctest-modules", "--cov=textconf", "--cov-report=lcov:lcov.info"]
-doctest_optionflags = ["NORMALIZE_WHITESPACE", "IGNORE_EXCEPTION_DETAIL"]
+addopts = ["--cov=textconf", "--cov-report=lcov:lcov.info"]
 filterwarnings = ['ignore:pkg_resources is deprecated:DeprecationWarning']
 
 [tool.coverage.report]
@@ -66,10 +65,7 @@ ignore = [
   "ANN401",
   "ARG002",
   "B904",
-  "D105",
-  "D107",
-  "D203",
-  "D213",
+  "D",
   "EM101",
   "PGH003",
   "TRY003",
@@ -80,7 +76,6 @@ ignore = [
   "A001",
   "ANN",
   "ARG",
-  "D",
   "FBT",
   "PD",
   "PLR",
