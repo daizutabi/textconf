@@ -7,7 +7,7 @@ from jinja2 import Template
 TEMPLATE_FILE = "I{{i}}|F{{f}}|S{{s}}|L{{l}}"
 
 
-@pytest.fixture()
+@pytest.fixture
 def template_file(tmp_path: Path):
     path = tmp_path / "template.jinja"
     path.write_text(TEMPLATE_FILE)
@@ -52,7 +52,7 @@ def test_render_arg_merge(template_file):
 TEMPLATE_FILE_DOT = "D{{d.x}}"
 
 
-@pytest.fixture()
+@pytest.fixture
 def template_file_dot(tmp_path: Path):
     path = tmp_path / "template.jinja"
     path.write_text(TEMPLATE_FILE_DOT)

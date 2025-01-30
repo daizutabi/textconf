@@ -50,7 +50,7 @@ class B(Config):
 TEMPLATE_FILE = "{{x}}|{{y}}"
 
 
-@pytest.fixture()
+@pytest.fixture
 def template_file(tmp_path: Path):
     path = tmp_path / "template.jinja"
     path.write_text(TEMPLATE_FILE)

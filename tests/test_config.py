@@ -38,7 +38,7 @@ class Config(BaseConfig):
 TEMPLATE_FILE = "X{{x}}|Y{{y}}|Z{{z}}"
 
 
-@pytest.fixture()
+@pytest.fixture
 def template_file(tmp_path: Path):
     path = tmp_path / "template.jinja"
     path.write_text(TEMPLATE_FILE)
