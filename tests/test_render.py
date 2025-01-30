@@ -14,10 +14,10 @@ def template_file(tmp_path: Path):
     return path
 
 
-def test_load_template(template_file):
-    from textconf.render import load_template
+def test_get_template(template_file):
+    from textconf.render import get_template
 
-    tmpl = load_template(template_file)
+    tmpl = get_template(template_file)
     assert isinstance(tmpl, Template)
 
 
@@ -59,10 +59,10 @@ def template_file_dot(tmp_path: Path):
     return path
 
 
-def test_load_template_dot(template_file_dot):
-    from textconf.render import load_template
+def test_get_template_dot(template_file_dot):
+    from textconf.render import get_template
 
-    tmpl = load_template(template_file_dot)
+    tmpl = get_template(template_file_dot)
     assert isinstance(tmpl, Template)
 
 
