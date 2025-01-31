@@ -30,12 +30,18 @@ def multirun(collect):
 
 @pytest.fixture(scope="module")
 def multirun1(multirun):
-    return multirun[0]
+    if multirun[0]["x"] == "1e-05":
+        return multirun[0]
+
+    return multirun[1]
 
 
 @pytest.fixture(scope="module")
 def multirun2(multirun):
-    return multirun[1]
+    if multirun[0]["x"] == "1e-05":
+        return multirun[1]
+
+    return multirun[0]
 
 
 @pytest.mark.parametrize(
