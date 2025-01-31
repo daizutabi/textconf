@@ -27,6 +27,7 @@ Issues = "https://github.com/daizutabi/textconf/issues"
 
 [tool.uv]
 dev-dependencies = [
+  "hydra-core>=1.3",
   "markdown-exec[ansi]",
   "mkapi",
   "mkdocs-material",
