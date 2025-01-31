@@ -44,7 +44,6 @@ class BaseConfig(Renderable):
 
     Attributes:
         _template_ (str | Path): The name or path of the template file.
-
     """
 
     _template_: str = ""
@@ -82,7 +81,6 @@ class BaseConfig(Renderable):
         Raises:
             FileNotFoundError: If the template file does not exist
                 in any of the searched directories.
-
         """
         params = {k: v for k, v in cls.context(cfg).items() if v is not None}
         params.update({k: v for k, v in kwargs.items() if v is not None})
@@ -94,9 +92,14 @@ class BaseConfig(Renderable):
             if name not in params and (value := obj(cfg)) is not None:
                 params[name] = value
 
-        template_file = get_template_file(cls, cfg._template_)
-        env = get_environment(template_file)
-        cls.set_environment(env)
-        template = env.get_template(template_file.name)
+        if "{" in cfg._template_:
+            env = get_environment(None)
+            cls.set_environment(env)
+            template = env.from_string(cfg._template_)
+        else:
+            template_file = get_template_file(cls, cfg._template_)
+            env = get_environment(template_file)
+            cls.set_environment(env)
+            template = env.get_template(template_file.name)
 
         return render(template, cfg, *args, **params)

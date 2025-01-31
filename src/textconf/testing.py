@@ -62,7 +62,6 @@ def assert_render_in(
         AssertionError: If the expected substring is not found in the rendered
             text for either the original configuration object or the OmegaConf
             dictionary configuration.
-
     """
 
     def callback(text: str, expected: str) -> None:
@@ -103,7 +102,6 @@ def assert_render_eq(
         AssertionError: If the rendered text does not match the expected
             string for either the original configuration object or the
             OmegaConf dictionary configuration.
-
     """
 
     def callback(text: str, expected: str) -> None:
@@ -144,14 +142,15 @@ def assert_render_startswith(
         AssertionError: If the rendered text does not start with the
             expected string for either the original configuration object or
             the OmegaConf dictionary configuration.
-
     """
 
     def callback(text: str, expected: str) -> None:
         if not text.startswith(expected):
-            msg = "Rendered text does not start with the expected "
-            msg += f"string: {expected!r}, but it starts with "
-            msg += f"{text[:len(expected)]!r} instead."
+            msg = (
+                "Rendered text does not start with the expected "
+                f"string: {expected!r}, but it starts with "
+                f"{text[: len(expected)]!r} instead."
+            )
             raise AssertionError(msg)
 
     _assert_render(cfg, expected, callback, *args, **kwargs)
@@ -181,14 +180,15 @@ def assert_render_endswith(
         AssertionError: If the rendered text does not end with the
             expected string for either the original configuration object or
             the OmegaConf dictionary configuration.
-
     """
 
     def callback(text: str, expected: str) -> None:
         if not text.endswith(expected):
-            msg = "Rendered text does not end with the expected "
-            msg += f"string: {expected!r}, but it ends with "
-            msg += f"{text[-len(expected):]!r} instead."
+            msg = (
+                "Rendered text does not end with the expected "
+                f"string: {expected!r}, but it ends with "
+                f"{text[-len(expected) :]!r} instead."
+            )
             raise AssertionError(msg)
 
     _assert_render(cfg, expected, callback, *args, **kwargs)

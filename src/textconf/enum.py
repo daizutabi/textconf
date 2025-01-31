@@ -33,7 +33,6 @@ class RenderableEnum(Enum):
 
         Returns:
             str: The rendered output from the corresponding renderable class.
-
         """
         module = inspect.getmodule(self)
 

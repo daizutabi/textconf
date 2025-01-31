@@ -83,3 +83,11 @@ def test_get_environment(template_file: Path):
     env = get_environment(template_file)
     tmpl = env.get_template(template_file.name)
     assert isinstance(tmpl, Template)
+
+
+def test_get_environment_str():
+    from textconf.template import get_environment
+
+    env = get_environment(None)
+    tmpl = env.from_string("{{ x }}")
+    assert tmpl.render(x=1) == "1"

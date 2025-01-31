@@ -40,7 +40,6 @@ def get_template_file(
     Raises:
         FileNotFoundError: If the template file does not exist in any of the
             searched directories.
-
     """
     file = Path(filename)
 
@@ -84,7 +83,6 @@ def iter_template_methods(cls: object) -> Iterator[tuple[str, Callable[[Any], An
     Yields:
         tuple[str, Callable[[Any], Any]]: Tuples, each containing the name
         of the template method and the method itself.
-
     """
     members = inspect.getmembers(cls)
     for name, obj in members:
@@ -107,7 +105,6 @@ def is_template_method(obj: object) -> TypeGuard[Callable[[Any], Any]]:
     Returns:
         bool: True if the object is a method that matches the template
         method criteria. False otherwise.
-
     """
     if not inspect.ismethod(obj) or not inspect.isclass(obj.__self__):
         return False
@@ -119,15 +116,18 @@ def is_template_method(obj: object) -> TypeGuard[Callable[[Any], Any]]:
     return len(signature.parameters) == 1
 
 
-def get_environment(template_file: str | Path) -> Environment:
+def get_environment(template_file: str | Path | None) -> Environment:
     """Get the environment for a template file.
 
     Args:
-        template_file (str | Path): The path to the template file.
+        template (str | Path | None): The path to the template file.
 
     Returns:
         Environment: The environment for the template file.
     """
+    if template_file is None:
+        return Environment(autoescape=select_autoescape(["jinja2"]))
+
     path = Path(template_file).absolute().resolve()
     loader = FileSystemLoader(path.parent)
     return Environment(loader=loader, autoescape=select_autoescape(["jinja2"]))
