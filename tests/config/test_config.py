@@ -20,6 +20,19 @@ if TYPE_CHECKING:
     from pytest import MonkeyPatch
 
 
+@pytest.fixture
+def template_file(tmp_path: Path):
+    path = tmp_path / "template.jinja"
+    path.write_text("X{{x}}|Y{{y}}|Z{{z}}")
+    return path
+
+
+@pytest.fixture(autouse=True)
+def _setup(monkeypatch: MonkeyPatch, template_file: Path):
+    monkeypatch.chdir(template_file.parent)
+    yield
+
+
 @dataclass
 class Config(BaseConfig):
     _template_: str = "template.jinja"
@@ -33,22 +46,6 @@ class Config(BaseConfig):
     @classmethod
     def z(cls, cfg: Self) -> str:
         return "z" * cfg.x
-
-
-TEMPLATE_FILE = "X{{x}}|Y{{y}}|Z{{z}}"
-
-
-@pytest.fixture
-def template_file(tmp_path: Path):
-    path = tmp_path / "template.jinja"
-    path.write_text(TEMPLATE_FILE)
-    return path
-
-
-@pytest.fixture(autouse=True)
-def _setup(monkeypatch: MonkeyPatch, template_file: Path):
-    monkeypatch.chdir(template_file.parent)
-    yield
 
 
 def test_render_eq():
@@ -123,6 +120,10 @@ def test_context():
 def test_context_kwargs():
     cfg = Context(x=2)
     assert_render_eq(cfg, "X2|Y3|Zzzzzzz", y=3)
+
+
+def test_context_kwargs_override():
+    cfg = Context(x=2)
     assert_render_eq(cfg, "X2|Y3|ZA", y=3, z="A")
 
 

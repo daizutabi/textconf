@@ -2,22 +2,22 @@ import math
 from pathlib import Path
 
 import pytest
-from jinja2 import Environment
+from jinja2 import Environment, Template
+
+from textconf.render import render
 
 
 @pytest.fixture
 def write_template(tmp_path: Path):
-    def write_template(text: str) -> Path:
+    from textconf.template import get_environment
+
+    def write_template(text: str) -> Template:
         path = tmp_path / "template.jinja"
         path.write_text(text)
-        return path
+        env = get_environment(path)
+        return env.get_template(path.name)
 
     return write_template
-
-
-def test_write_template(write_template):
-    s = write_template("{{x}}")
-    assert s.read_text() == "{{x}}"
 
 
 @pytest.mark.parametrize(
@@ -30,10 +30,8 @@ def test_write_template(write_template):
     ],
 )
 def test_without_format(write_template, x, expected):
-    from textconf.render import render
-
-    template_file = write_template("{{x}}")
-    assert render(template_file, x=x) == expected
+    template = write_template("{{x}}")
+    assert render(template, x=x) == expected
 
 
 @pytest.mark.parametrize(
@@ -41,10 +39,8 @@ def test_without_format(write_template, x, expected):
     [(1.2345, "1.234"), (1.23456, "1.235"), (1.234e-3, "0.001")],
 )
 def test_decimal_place(write_template, x, expected):
-    from textconf.render import render
-
-    template_file = write_template('{{ "{:.3f}".format(x) }}')
-    assert render(template_file, x=x) == expected
+    template = write_template('{{ "{:.3f}".format(x) }}')
+    assert render(template, x=x) == expected
 
 
 @pytest.mark.parametrize(
@@ -58,10 +54,8 @@ def test_decimal_place(write_template, x, expected):
     ],
 )
 def test_significant_figures(write_template, x, expected):
-    from textconf.render import render
-
-    template_file = write_template('{{ "{:.3g}".format(x) }}')
-    assert render(template_file, x=x) == expected
+    template = write_template('{{ "{:.3g}".format(x) }}')
+    assert render(template, x=x) == expected
 
 
 @pytest.mark.parametrize(
@@ -72,10 +66,8 @@ def test_significant_figures(write_template, x, expected):
     ],
 )
 def test_significant_figures_calc(write_template, x, y, expected):
-    from textconf.render import render
-
-    template_file = write_template('{{"{:.3g}".format(x*y)}}')
-    assert render(template_file, x=x, y=y) == expected
+    template = write_template('{{"{:.3g}".format(x*y)}}')
+    assert render(template, x=x, y=y) == expected
 
 
 def significant_figures(value: float, ndigits: int) -> str:
@@ -109,8 +101,6 @@ def env():
     ],
 )
 def test_filter(env: Environment, x, ndigits, expected):
-    from textconf.render import render
-
     template = env.from_string("{{ x|sformat(" + str(ndigits) + ") }}")
     assert render(template, x=x) == expected
 
@@ -125,8 +115,6 @@ def test_filter(env: Environment, x, ndigits, expected):
     ],
 )
 def test_func(env: Environment, x, zero, expected):
-    from textconf.render import render
-
     if zero:
         text = "{{ sin(x)|zero_if_small|sformat(3) }}"
     else:

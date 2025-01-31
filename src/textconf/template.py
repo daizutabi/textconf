@@ -7,6 +7,8 @@ from inspect import Signature
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
     from typing import Any, TypeGuard
@@ -115,3 +117,17 @@ def is_template_method(obj: object) -> TypeGuard[Callable[[Any], Any]]:
         return False
 
     return len(signature.parameters) == 1
+
+
+def get_environment(template_file: str | Path) -> Environment:
+    """Get the environment for a template file.
+
+    Args:
+        template_file (str | Path): The path to the template file.
+
+    Returns:
+        Environment: The environment for the template file.
+    """
+    path = Path(template_file).absolute().resolve()
+    loader = FileSystemLoader(path.parent)
+    return Environment(loader=loader, autoescape=select_autoescape(["jinja2"]))
