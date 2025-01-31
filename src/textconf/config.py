@@ -9,13 +9,15 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from .render import render
-from .template import get_template_file, iter_template_methods
+from .template import get_environment, get_template_file, iter_template_methods
 
 if TYPE_CHECKING:
     from typing import Any, Self
+
+    from jinja2 import Environment
 
 
 @dataclass
@@ -46,9 +48,19 @@ class BaseConfig(Renderable):
     """
 
     _template_: str = ""
+    class_methods: ClassVar[list[str]] = ["context", "render"]
 
     @classmethod
-    def render(cls, cfg: Self, *args: dict[str, Any] | list[str], **kwargs) -> str:
+    def set_environment(cls, env: Environment) -> None:
+        pass
+
+    @classmethod
+    def render(
+        cls,
+        cfg: Self,
+        *args: dict[str, Any] | list[str],
+        **kwargs,
+    ) -> str:
         """Render text from the specified configuration.
 
         This method locates the template file, updates the configuration,
@@ -76,11 +88,15 @@ class BaseConfig(Renderable):
         params.update({k: v for k, v in kwargs.items() if v is not None})
 
         for name, obj in iter_template_methods(cls):
-            if name in ["render", "context"]:
+            if name in cls.class_methods:
                 continue
 
             if name not in params and (value := obj(cfg)) is not None:
                 params[name] = value
 
         template_file = get_template_file(cls, cfg._template_)
-        return render(template_file, cfg, *args, **params)
+        env = get_environment(template_file)
+        cls.set_environment(env)
+        template = env.get_template(template_file.name)
+
+        return render(template, cfg, *args, **params)

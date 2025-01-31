@@ -2,6 +2,7 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 
 import pytest
+from jinja2 import Template
 from pytest import MonkeyPatch
 
 
@@ -67,3 +68,18 @@ def test_current_dir_not_found(tmp_path: Path):
 
     with pytest.raises(FileNotFoundError):
         get_template_file(Class, "template.jinja")
+
+
+@pytest.fixture
+def template_file(tmp_path: Path):
+    path = tmp_path / "template.jinja"
+    path.write_text("")
+    return path
+
+
+def test_get_environment(template_file: Path):
+    from textconf.template import get_environment
+
+    env = get_environment(template_file)
+    tmpl = env.get_template(template_file.name)
+    assert isinstance(tmpl, Template)
