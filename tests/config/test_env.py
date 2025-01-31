@@ -10,6 +10,7 @@ from textconf.testing import assert_render_in
 
 if TYPE_CHECKING:
     from pathlib import Path
+    from typing import Self
 
     from jinja2 import Environment
     from pytest import MonkeyPatch
@@ -47,22 +48,39 @@ class Config(BaseConfig):
         env.filters["myfilter"] = myfilter
         env.globals["myfunc"] = myfunc
 
+    @classmethod
+    def render(cls, cfg: Self, **kwargs) -> str:
+        if "b" in kwargs:
+            kwargs["b"] *= 100
 
-def test_render_filter():
+        return super().render(cfg, **kwargs)
+
+
+def test_filter():
     cfg = Config("template.jinja", a=10)
     assert_render_in(cfg, "A11.0|")
 
 
-def test_render_filter_arg():
+def test_filter_arg():
     cfg = Config("template.jinja", a=20, b=10)
     assert_render_in(cfg, "C32.0|")
 
 
-def test_render_func():
+def test_func():
     cfg = Config("template.jinja", b=3)
     assert_render_in(cfg, "B6.0|")
 
 
-def test_render_func_arg():
+def test_func_arg():
     cfg = Config("template.jinja", a=5, b=3)
     assert_render_in(cfg, "D45.0|")
+
+
+def test_render_kwargs():
+    cfg = Config("template.jinja")
+    assert_render_in(cfg, "A21|", a=20)
+
+
+def test_render_kwargs_custom():
+    cfg = Config("template.jinja", a=10, b=10)
+    assert_render_in(cfg, "B4000|", a=20, b=20)
