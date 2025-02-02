@@ -44,14 +44,15 @@ class BaseConfig(Renderable):
 
     Attributes:
         _template_ (str | Path): The name or path of the template file.
+
     """
 
     _template_: str = ""
-    class_methods: ClassVar[list[str]] = ["context", "render"]
+    class_methods: ClassVar[list[str]] = ["context", "render", "set_environment"]
 
     @classmethod
     def set_environment(cls, env: Environment) -> None:
-        pass
+        """Set the environment for the `Template`."""
 
     @classmethod
     def render(
@@ -81,6 +82,7 @@ class BaseConfig(Renderable):
         Raises:
             FileNotFoundError: If the template file does not exist
                 in any of the searched directories.
+
         """
         params = {k: v for k, v in cls.context(cfg).items() if v is not None}
         params.update({k: v for k, v in kwargs.items() if v is not None})

@@ -40,6 +40,7 @@ def render(
 
     Returns:
         str: The rendered template as a string.
+
     """
     if not cfg:
         cfg = {}
@@ -65,5 +66,6 @@ def to_dotlist(cfg: dict[str, Any]) -> list[str]:
 
     Returns:
         list[str]: A list of dotlist strings.
+
     """
     return [f"{k}={v}" for k, v in cfg.items()]

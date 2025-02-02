@@ -62,6 +62,7 @@ def assert_render_in(
         AssertionError: If the expected substring is not found in the rendered
             text for either the original configuration object or the OmegaConf
             dictionary configuration.
+
     """
 
     def callback(text: str, expected: str) -> None:
@@ -102,6 +103,7 @@ def assert_render_eq(
         AssertionError: If the rendered text does not match the expected
             string for either the original configuration object or the
             OmegaConf dictionary configuration.
+
     """
 
     def callback(text: str, expected: str) -> None:
@@ -142,6 +144,7 @@ def assert_render_startswith(
         AssertionError: If the rendered text does not start with the
             expected string for either the original configuration object or
             the OmegaConf dictionary configuration.
+
     """
 
     def callback(text: str, expected: str) -> None:
@@ -180,6 +183,7 @@ def assert_render_endswith(
         AssertionError: If the rendered text does not end with the
             expected string for either the original configuration object or
             the OmegaConf dictionary configuration.
+
     """
 
     def callback(text: str, expected: str) -> None:
