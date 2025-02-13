@@ -23,7 +23,7 @@ pip install textconf
 [pypi-v-link]: https://pypi.org/project/textconf/
 [python-v-image]: https://img.shields.io/pypi/pyversions/textconf.svg
 [python-v-link]: https://pypi.org/project/textconf
-[GHAction-image]: https://github.com/daizutabi/textconf/actions/workflows/ci.yml/badge.svg?branch=main&event=push
+[GHAction-image]: https://github.com/daizutabi/textconf/actions/workflows/ci.yaml/badge.svg?branch=main&event=push
 [GHAction-link]: https://github.com/daizutabi/textconf/actions?query=event%3Apush+branch%3Amain
 [codecov-image]: https://codecov.io/github/daizutabi/textconf/coverage.svg?branch=main
 [codecov-link]: https://codecov.io/github/daizutabi/textconf?branch=main
