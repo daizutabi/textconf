@@ -25,28 +25,17 @@ Documentation = "https://daizutabi.github.io/textconf/"
 Source = "https://github.com/daizutabi/textconf"
 Issues = "https://github.com/daizutabi/textconf/issues"
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
   "hydra-core>=1.3",
-  "markdown-exec[ansi]",
-  "mkapi",
-  "mkdocs-material",
-  "mkdocs>=1.6",
-  "pytest-clarity",
-  "pytest-cov",
-  "pytest-randomly",
-  "pytest-xdist",
+  "pytest-clarity>=1",
+  "pytest-cov>=6",
+  "pytest-randomly>=3.16",
+  "pytest-xdist>=3.6",
 ]
-
-[tool.hatch.build.targets.sdist]
-exclude = ["/.github", "/docs"]
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/textconf"]
 
 [tool.pytest.ini_options]
 addopts = ["--cov=textconf", "--cov-report=lcov:lcov.info"]
-filterwarnings = ['ignore:pkg_resources is deprecated:DeprecationWarning']
 
 [tool.coverage.report]
 exclude_lines = ["no cov", "raise NotImplementedError", "if TYPE_CHECKING:"]
