@@ -25,7 +25,7 @@ class Renderable(ABC):
     """Represent a renderable class."""
 
     @classmethod
-    def context(cls, cfg: Self) -> dict[str, Any]:  # noqa: ARG003
+    def context(cls, cfg: Self) -> dict[str, Any]:
         """Get the context for rendering."""
         return {}
 
