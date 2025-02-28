@@ -35,7 +35,7 @@ def _setup(monkeypatch: MonkeyPatch, template_file: Path):
 
 @dataclass
 class Config(BaseConfig):
-    _template_: str = "template.jinja"
+    template: str = "template.jinja"
     x: int = 0
     y: int = 0
 
@@ -95,7 +95,7 @@ def test_render_endswith_raises():
 
 @dataclass
 class Context(BaseConfig):
-    _template_: str = "template.jinja"
+    template: str = "template.jinja"
     x: int = 0
 
     @classmethod
