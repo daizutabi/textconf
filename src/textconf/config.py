@@ -43,11 +43,11 @@ class BaseConfig(Renderable):
     and methods for updating and rendering text based on templates.
 
     Attributes:
-        _template_ (str | Path): The name or path of the template file.
+        template (str | Path): The name or path of the template file.
 
     """
 
-    _template_: str = ""
+    template: str = ""
     class_methods: ClassVar[list[str]] = ["context", "render", "set_environment"]
 
     @classmethod
@@ -94,12 +94,13 @@ class BaseConfig(Renderable):
             if name not in params and (value := obj(cfg)) is not None:
                 params[name] = value
 
-        if "{" in cfg._template_:
+        if "{" in cfg.template:
             env = get_environment(None)
             cls.set_environment(env)
-            template = env.from_string(cfg._template_)
+            template = env.from_string(cfg.template)
+
         else:
-            template_file = get_template_file(cls, cfg._template_)
+            template_file = get_template_file(cls, cfg.template)
             env = get_environment(template_file)
             cls.set_environment(env)
             template = env.get_template(template_file.name)

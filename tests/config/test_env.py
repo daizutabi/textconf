@@ -25,7 +25,7 @@ TEMPLATE = "A{{a|myfilter}}|B{{myfunc(b)}}|C{{a+b|myfilter(2)}}|D{{myfunc(a*b,3)
 
 @dataclass
 class Config(BaseConfig):
-    _template_: str = TEMPLATE
+    template: str = TEMPLATE
     a: float = 0
     b: float = 0
 
