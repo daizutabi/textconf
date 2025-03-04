@@ -78,3 +78,6 @@ ignore = [
   "SIM117",
   "SLF",
 ]
+
+[tool.pyright]
+include = ["src", "tests"]
