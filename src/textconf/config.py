@@ -25,13 +25,13 @@ class Renderable(ABC):
     """Represent a renderable class."""
 
     @classmethod
-    def context(cls, cfg: Self) -> dict[str, Any]:
+    def context(cls, cfg: Renderable) -> dict[str, Any]:
         """Get the context for rendering."""
         return {}
 
     @classmethod
     @abstractmethod
-    def render(cls, cfg: Self, *args, **kwargs) -> str:
+    def render(cls, cfg: Renderable, *args, **kwargs) -> str:
         """Render the given configuration and return a string."""
 
 
