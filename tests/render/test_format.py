@@ -84,9 +84,9 @@ def zero_if_small(value: float, threshold: float = 1e-12) -> float:
 @pytest.fixture(scope="module")
 def env():
     env = Environment()
-    env.filters["sformat"] = significant_figures
-    env.filters["zero_if_small"] = zero_if_small
-    env.globals["sin"] = math.sin
+    env.filters["sformat"] = significant_figures  # type: ignore
+    env.filters["zero_if_small"] = zero_if_small  # type: ignore
+    env.globals["sin"] = math.sin  # type: ignore
     return env
 
 

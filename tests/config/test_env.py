@@ -31,8 +31,8 @@ class Config(BaseConfig):
 
     @classmethod
     def set_environment(cls, env: Environment) -> None:
-        env.filters["myfilter"] = myfilter
-        env.globals["myfunc"] = myfunc
+        env.filters["myfilter"] = myfilter  # type: ignore
+        env.globals["myfunc"] = myfunc  # type: ignore
 
     @classmethod
     def render(cls, cfg: Self, **kwargs) -> str:

@@ -54,7 +54,7 @@ class Config(BaseConfig):
 
     @classmethod
     def set_environment(cls, env: Environment) -> None:
-        env.filters["twice"] = twice
+        env.filters["twice"] = twice  # type: ignore
 
 
 ConfigStore.instance().store(name="config", node=Config("base.jinja"))
