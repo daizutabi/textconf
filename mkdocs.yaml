@@ -33,13 +33,13 @@ theme:
     - navigation.indexes
     - navigation.sections
     - navigation.tabs
-    - navigation.tabs.sticky
     - navigation.top
     - navigation.tracking
 plugins:
   - search
   - markdown-exec
-  - mkapi
+  - mkapi:
+      debug: true
 markdown_extensions:
   - pymdownx.magiclink
   - pymdownx.highlight:
