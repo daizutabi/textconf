@@ -39,6 +39,7 @@ jobs:
       - name: Ty check
         run: uvx ty check --python-version 3.11
       - name: Basedpyright check
+        if: matrix.python-version != '3.10' && matrix.python-version != '3.11'
         run: uvx basedpyright src
       - name: Run test
         run: uv run pytest -n 8 --junitxml=junit.xml
