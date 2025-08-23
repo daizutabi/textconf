@@ -21,7 +21,7 @@ def render(
     template: Template,
     cfg: object | None = None,
     *args: dict[str, Any] | list[str],
-    **kwargs,
+    **kwargs: Any,
 ) -> str:
     """Render a Jinja2 template with the given context.
 
@@ -48,7 +48,7 @@ def render(
         cfg = OmegaConf.structured(cfg)
 
     if args:
-        dotlist = []
+        dotlist: list[str] = []
         for arg in args:
             dotlist.extend(to_dotlist(arg) if isinstance(arg, dict) else arg)
 

@@ -16,6 +16,7 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
 ]
 requires-python = ">=3.10"
 dependencies = ["jinja2", "omegaconf"]
@@ -80,8 +81,10 @@ ignore = [
   "SLF",
 ]
 
-[tool.pyright]
+[tool.basedpyright]
 include = ["src", "tests"]
-strictDictionaryInference = true
-strictListInference = true
-strictSetInference = true
+reportAny = false
+reportExplicitAny = false
+reportImplicitOverride = false
+reportIncompatibleVariableOverride = false
+reportUnusedCallResult = false

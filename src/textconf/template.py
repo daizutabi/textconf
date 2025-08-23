@@ -51,7 +51,7 @@ def get_template_file(
     if file_.exists():
         return file_.absolute()
 
-    from_dir = Path(inspect.getfile(cls)).parent  # type: ignore
+    from_dir = Path(inspect.getfile(cls)).parent  # pyright: ignore[reportArgumentType]
     return _get_template_file_from_dir(file, dir, from_dir).absolute()
 
 

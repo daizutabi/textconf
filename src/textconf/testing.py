@@ -14,6 +14,7 @@ from omegaconf import OmegaConf
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+    from typing import Any
 
     from textconf.config import Renderable
 
@@ -22,8 +23,8 @@ def _assert_render(
     cfg: Renderable,
     expected: str | list[str],
     callback: Callable[[str, str], None],
-    *args,
-    **kwargs,
+    *args: Any,
+    **kwargs: Any,
 ) -> None:
     if isinstance(expected, str):
         expected = [expected]
@@ -40,8 +41,8 @@ def _assert_render(
 def assert_render_in(
     cfg: Renderable,
     expected: str | list[str],
-    *args,
-    **kwargs,
+    *args: Any,
+    **kwargs: Any,
 ) -> None:
     """Assert that a rendered text contains a substring.
 
@@ -82,8 +83,8 @@ def assert_render_in(
 def assert_render_eq(
     cfg: Renderable,
     expected: str,
-    *args,
-    **kwargs,
+    *args: Any,
+    **kwargs: Any,
 ) -> None:
     """Assert that a rendered text is equal to the expected string.
 
@@ -123,8 +124,8 @@ def assert_render_eq(
 def assert_render_startswith(
     cfg: Renderable,
     expected: str,
-    *args,
-    **kwargs,
+    *args: Any,
+    **kwargs: Any,
 ) -> None:
     """Assert that a rendered text starts with the expected string.
 
@@ -162,8 +163,8 @@ def assert_render_startswith(
 def assert_render_endswith(
     cfg: Renderable,
     expected: str,
-    *args,
-    **kwargs,
+    *args: Any,
+    **kwargs: Any,
 ) -> None:
     """Assert that a rendered text ends with the expected string.
 

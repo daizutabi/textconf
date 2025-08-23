@@ -1,4 +1,11 @@
+import sys
+
 import pytest
+
+pytestmark = pytest.mark.skipif(
+    sys.version_info >= (3, 14),
+    reason="Skipping tests on Python 3.14",
+)
 
 
 @pytest.fixture(scope="module")

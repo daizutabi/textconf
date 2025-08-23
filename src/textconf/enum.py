@@ -19,7 +19,7 @@ class RenderableEnum(Enum):
         self,
         cfg: Renderable,
         *args: dict[str, Any] | list[str],
-        **kwargs,
+        **kwargs: Any,
     ) -> str:
         """Render the enum value using the provided configuration.
 
