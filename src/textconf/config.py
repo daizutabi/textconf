@@ -25,13 +25,13 @@ class Renderable(ABC):
     """Represent a renderable class."""
 
     @classmethod
-    def context(cls, cfg: Renderable) -> dict[str, Any]:
+    def context(cls, cfg: Renderable) -> dict[str, Any]:  # pyright: ignore[reportUnusedParameter]
         """Get the context for rendering."""
         return {}
 
     @classmethod
     @abstractmethod
-    def render(cls, cfg: Renderable, *args, **kwargs) -> str:
+    def render(cls, cfg: Renderable, *args: Any, **kwargs: Any) -> str:
         """Render the given configuration and return a string."""
 
 
@@ -51,7 +51,7 @@ class BaseConfig(Renderable):
     class_methods: ClassVar[list[str]] = ["context", "render", "set_environment"]
 
     @classmethod
-    def set_environment(cls, env: Environment) -> None:
+    def set_environment(cls, env: Environment) -> None:  # pyright: ignore[reportUnusedParameter]
         """Set the environment for the `Template`."""
 
     @classmethod
@@ -59,7 +59,7 @@ class BaseConfig(Renderable):
         cls,
         cfg: Self,
         *args: dict[str, Any] | list[str],
-        **kwargs,
+        **kwargs: Any,
     ) -> str:
         """Render text from the specified configuration.
 
